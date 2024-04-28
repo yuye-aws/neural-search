@@ -33,7 +33,6 @@ import org.opensearch.index.query.AbstractQueryBuilder;
 import org.opensearch.index.query.QueryBuilder;
 import org.opensearch.index.query.QueryRewriteContext;
 import org.opensearch.index.query.QueryShardContext;
-import org.opensearch.knn.index.query.KNNQueryBuilder;
 import org.opensearch.neuralsearch.ml.MLCommonsClientAccessor;
 import org.opensearch.neuralsearch.util.NeuralSearchClusterUtil;
 
@@ -289,18 +288,7 @@ public class NeuralQueryBuilder extends AbstractQueryBuilder<NeuralQueryBuilder>
         // create a new builder. Once the supplier's value gets set, we return a KNNQueryBuilder. Otherwise, we just
         // return the current unmodified query builder.
         if (vectorSupplier() != null) {
-            if (vectorSupplier().get() == null) {
-                return this;
-            }
-            KNNQueryBuilder knnQueryBuilder = new KNNQueryBuilder(fieldName(), vectorSupplier.get()).filter(filter());
-            if (maxDistance != null) {
-                knnQueryBuilder.maxDistance(maxDistance);
-            } else if (minScore != null) {
-                knnQueryBuilder.minScore(minScore);
-            } else {
-                knnQueryBuilder.k(k);
-            }
-            return knnQueryBuilder;
+            return this;
         }
 
         SetOnce<float[]> vectorSetOnce = new SetOnce<>();
