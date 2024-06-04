@@ -1,0 +1,10 @@
+{
+  "runtime": "python",
+  "model": {
+    "modelName": "text_embedding",
+    "handler": "text_embedding_handler.py",
+    "modelVersion": "1.0",
+    "configFile": "text_embedding_config.yaml"
+  },
+  "archiverVersion": "0.9.0"
+}
