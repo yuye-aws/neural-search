@@ -29,7 +29,7 @@ import org.opensearch.index.mapper.NumberFieldMapper;
 import org.opensearch.index.query.TermsQueryBuilder;
 import org.opensearch.neuralsearch.processor.util.DocumentClusterManager;
 import org.opensearch.neuralsearch.processor.util.DocumentClusterUtils;
-import org.opensearch.transport.client.Client;
+import org.opensearch.client.Client;
 import org.opensearch.common.SetOnce;
 import org.opensearch.common.collect.Tuple;
 import org.opensearch.core.ParseField;
