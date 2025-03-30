@@ -19,7 +19,7 @@ import org.opensearch.neuralsearch.processor.RewriteTokenProcessor;
 import org.opensearch.neuralsearch.processor.util.DocumentClusterManager;
 import org.opensearch.neuralsearch.processor.util.JLTransformer;
 import org.opensearch.neuralsearch.processor.util.SinnamonTransformer;
-import org.opensearch.transport.client.Client;
+import org.opensearch.client.Client;
 import org.opensearch.cluster.metadata.IndexNameExpressionResolver;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.settings.Setting;
