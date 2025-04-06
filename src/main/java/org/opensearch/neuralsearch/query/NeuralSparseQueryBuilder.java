@@ -452,10 +452,8 @@ public class NeuralSparseQueryBuilder extends AbstractQueryBuilder<NeuralSparseQ
         Map<String, Float> queryTokens = queryTokensSupplier.get();
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         if (this.searchCluster) {
-            // generate term query for cluster ids
-            final List<Integer> clusterIds = getClusterIds(queryTokens);
-            constructTermQueryWithClusterIds(builder, context, clusterIds);
-            builder.setMinimumNumberShouldMatch(1);
+            List<Integer> clusterIds = this.getClusterIds(queryTokens);
+            builder.setClusterIds(clusterIds);
         }
 
         for (Map.Entry<String, Float> entry : queryTokens.entrySet()) {
