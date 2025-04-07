@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -21,10 +22,17 @@ import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.lucene.document.FeatureField;
 import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.GroupedDisi;
 import org.apache.lucene.search.Query;
 import org.opensearch.Version;
+import org.opensearch.common.cache.Cache;
+import org.opensearch.core.index.Index;
+import org.opensearch.core.index.shard.ShardId;
+import org.opensearch.index.IndexSettings;
+import org.opensearch.index.cache.ClusterIdBoundsCache;
 import org.opensearch.index.mapper.NumberFieldMapper;
 import org.opensearch.index.query.TermsQueryBuilder;
 import org.opensearch.neuralsearch.processor.util.DocumentClusterManager;
@@ -452,8 +460,41 @@ public class NeuralSparseQueryBuilder extends AbstractQueryBuilder<NeuralSparseQ
         Map<String, Float> queryTokens = queryTokensSupplier.get();
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         if (this.searchCluster) {
+            ClusterIdBoundsCache clusterIdBoundsCache = context.getClusterIdBoundsCache();
+            Cache<IndexReader.CacheKey, Map<Long, ClusterIdBoundsCache.Value>> loadedBounds = clusterIdBoundsCache.getLoadedBounds();
+            IndexSettings indexSettings = clusterIdBoundsCache.getIndexSettings();
+            Index index = indexSettings.getIndex();
+            String name = index.getName();
+            ShardId shardId = new ShardId(index, context.getShardId());
+            Map<Long, ClusterIdBoundsCache.DocBounds> clusterIdToBound = new HashMap<>();
+            // silly to iterate through all keys through loadedBounds
+            for (IndexReader.CacheKey key : loadedBounds.keys()) {
+                Map<Long, ClusterIdBoundsCache.Value> cacheValue = loadedBounds.get(key);
+                // extract related keys into the Shard ID map
+                for (Map.Entry<Long, ClusterIdBoundsCache.Value> entry : cacheValue.entrySet()) {
+                    Long clusterId = entry.getKey();
+                    ClusterIdBoundsCache.Value clusterIdBoundValue = entry.getValue();
+                    if (clusterIdBoundValue.shardId.equals(shardId)) {
+                        clusterIdToBound.put(clusterId, clusterIdBoundValue.bounds);
+                    }
+                }
+            }
+
+            Map<Long, GroupedDisi.DocBound> neededClusterIdBounds = new TreeMap<>();
+
             List<Integer> clusterIds = this.getClusterIds(queryTokens);
+            for (Integer clusterId : clusterIds) {
+                Long clusterIdLong = clusterId.longValue();
+                if (clusterIdToBound.containsKey(clusterIdLong)) {
+                    ClusterIdBoundsCache.DocBounds docBounds = clusterIdToBound.get(clusterIdLong);
+                    neededClusterIdBounds.put(clusterIdLong, new GroupedDisi.DocBound(docBounds.lowerBound, docBounds.upperBound) );
+                } else {
+                    neededClusterIdBounds.put(clusterIdLong, new GroupedDisi.DocBound(-1, -1));
+                }
+            }
+
             builder.setClusterIds(clusterIds);
+            builder.setClusterBoundPrecomputed(neededClusterIdBounds);
         }
 
         for (Map.Entry<String, Float> entry : queryTokens.entrySet()) {
