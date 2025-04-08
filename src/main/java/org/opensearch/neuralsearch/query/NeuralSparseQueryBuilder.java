@@ -23,13 +23,11 @@ import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.lucene.document.FeatureField;
 import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.GroupedDisi;
 import org.apache.lucene.search.Query;
 import org.opensearch.Version;
-import org.opensearch.common.cache.Cache;
 import org.opensearch.core.index.Index;
 import org.opensearch.core.index.shard.ShardId;
 import org.opensearch.index.IndexSettings;
@@ -462,35 +460,28 @@ public class NeuralSparseQueryBuilder extends AbstractQueryBuilder<NeuralSparseQ
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         if (this.searchCluster) {
             ClusterIdBoundsCache clusterIdBoundsCache = context.getClusterIdBoundsCache();
-            Cache<IndexReader.CacheKey, Map<ShardId, Map<String, Map<Long, ClusterIdBoundsCache.DocBounds>>>> loadedBounds = clusterIdBoundsCache.getLoadedBounds();
+            Map<ShardId, Map<String, Map<Long, ClusterIdBoundsCache.DocBounds>>> loadedBounds = clusterIdBoundsCache.getLoadedBounds();
             IndexSettings indexSettings = clusterIdBoundsCache.getIndexSettings();
             Index index = indexSettings.getIndex();
             ShardId shardId = new ShardId(index, context.getShardId());
 
             // Get the cluster IDs we need to search for
             List<Integer> clusterIds = this.getClusterIds(queryTokens);
-            Set<Long> clusterIdSet = clusterIds.stream()
-                .map(Integer::longValue)
-                .collect(Collectors.toSet());
+            Set<Long> clusterIdSet = clusterIds.stream().map(Integer::longValue).collect(Collectors.toSet());
 
             // segmentMap[segmentName][clusterId] = [lower, upper]
-            Map<Long, ClusterIdBoundsCache.DocBounds> clusterIdToBound = new HashMap<>();
             Map<String, Map<Long, ClusterIdBoundsCache.DocBounds>> segmentMap = new HashMap<>();
-            // silly to iterate through all keys through loadedBounds
-            for (IndexReader.CacheKey key : loadedBounds.keys()) {
-                Map<ShardId, Map<String, Map<Long, ClusterIdBoundsCache.DocBounds>>> shardMap = loadedBounds.get(key);
-                if (shardMap.containsKey(shardId)) {
-                    segmentMap = shardMap.get(shardId);
-                }
+            if (loadedBounds.containsKey(shardId)) {
+                segmentMap = loadedBounds.get(shardId);
             }
 
             Map<String, Map<Long, GroupedDisi.DocBound>> neededClusterIdBounds = new HashMap<>();
-            for(String segmentName : segmentMap.keySet()) {
+            for (String segmentName : segmentMap.keySet()) {
                 Map<Long, GroupedDisi.DocBound> neededClusterMap = new TreeMap<>();
                 Map<Long, ClusterIdBoundsCache.DocBounds> clusterMap = segmentMap.get(segmentName);
                 for (Long clusterId : clusterIdSet) {
                     if (clusterMap.containsKey(clusterId)) {
-                        ClusterIdBoundsCache.DocBounds docBounds = clusterIdToBound.get(clusterId);
+                        ClusterIdBoundsCache.DocBounds docBounds = clusterMap.get(clusterId);
                         neededClusterMap.put(clusterId, new GroupedDisi.DocBound(docBounds.lowerBound, docBounds.upperBound));
                     } else {
                         neededClusterMap.put(clusterId, new GroupedDisi.DocBound(-1, -1));
