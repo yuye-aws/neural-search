@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -461,36 +462,41 @@ public class NeuralSparseQueryBuilder extends AbstractQueryBuilder<NeuralSparseQ
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         if (this.searchCluster) {
             ClusterIdBoundsCache clusterIdBoundsCache = context.getClusterIdBoundsCache();
-            Cache<IndexReader.CacheKey, Map<Long, ClusterIdBoundsCache.Value>> loadedBounds = clusterIdBoundsCache.getLoadedBounds();
+            Cache<IndexReader.CacheKey, Map<ShardId, Map<String, Map<Long, ClusterIdBoundsCache.DocBounds>>>> loadedBounds = clusterIdBoundsCache.getLoadedBounds();
             IndexSettings indexSettings = clusterIdBoundsCache.getIndexSettings();
             Index index = indexSettings.getIndex();
-            String name = index.getName();
             ShardId shardId = new ShardId(index, context.getShardId());
+
+            // Get the cluster IDs we need to search for
+            List<Integer> clusterIds = this.getClusterIds(queryTokens);
+            Set<Long> clusterIdSet = clusterIds.stream()
+                .map(Integer::longValue)
+                .collect(Collectors.toSet());
+
+            // segmentMap[segmentName][clusterId] = [lower, upper]
             Map<Long, ClusterIdBoundsCache.DocBounds> clusterIdToBound = new HashMap<>();
+            Map<String, Map<Long, ClusterIdBoundsCache.DocBounds>> segmentMap = new HashMap<>();
             // silly to iterate through all keys through loadedBounds
             for (IndexReader.CacheKey key : loadedBounds.keys()) {
-                Map<Long, ClusterIdBoundsCache.Value> cacheValue = loadedBounds.get(key);
-                // extract related keys into the Shard ID map
-                for (Map.Entry<Long, ClusterIdBoundsCache.Value> entry : cacheValue.entrySet()) {
-                    Long clusterId = entry.getKey();
-                    ClusterIdBoundsCache.Value clusterIdBoundValue = entry.getValue();
-                    if (clusterIdBoundValue.shardId.equals(shardId)) {
-                        clusterIdToBound.put(clusterId, clusterIdBoundValue.bounds);
-                    }
+                Map<ShardId, Map<String, Map<Long, ClusterIdBoundsCache.DocBounds>>> shardMap = loadedBounds.get(key);
+                if (shardMap.containsKey(shardId)) {
+                    segmentMap = shardMap.get(shardId);
                 }
             }
 
-            Map<Long, GroupedDisi.DocBound> neededClusterIdBounds = new TreeMap<>();
-
-            List<Integer> clusterIds = this.getClusterIds(queryTokens);
-            for (Integer clusterId : clusterIds) {
-                Long clusterIdLong = clusterId.longValue();
-                if (clusterIdToBound.containsKey(clusterIdLong)) {
-                    ClusterIdBoundsCache.DocBounds docBounds = clusterIdToBound.get(clusterIdLong);
-                    neededClusterIdBounds.put(clusterIdLong, new GroupedDisi.DocBound(docBounds.lowerBound, docBounds.upperBound) );
-                } else {
-                    neededClusterIdBounds.put(clusterIdLong, new GroupedDisi.DocBound(-1, -1));
+            Map<String, Map<Long, GroupedDisi.DocBound>> neededClusterIdBounds = new HashMap<>();
+            for(String segmentName : segmentMap.keySet()) {
+                Map<Long, GroupedDisi.DocBound> neededClusterMap = new TreeMap<>();
+                Map<Long, ClusterIdBoundsCache.DocBounds> clusterMap = segmentMap.get(segmentName);
+                for (Long clusterId : clusterIdSet) {
+                    if (clusterMap.containsKey(clusterId)) {
+                        ClusterIdBoundsCache.DocBounds docBounds = clusterIdToBound.get(clusterId);
+                        neededClusterMap.put(clusterId, new GroupedDisi.DocBound(docBounds.lowerBound, docBounds.upperBound));
+                    } else {
+                        neededClusterMap.put(clusterId, new GroupedDisi.DocBound(-1, -1));
+                    }
                 }
+                neededClusterIdBounds.put(segmentName, neededClusterMap);
             }
 
             builder.setClusterIds(clusterIds);
