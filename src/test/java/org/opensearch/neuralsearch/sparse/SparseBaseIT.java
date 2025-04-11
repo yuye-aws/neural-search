@@ -19,6 +19,13 @@ import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.neuralsearch.BaseNeuralSearchIT;
 import org.opensearch.neuralsearch.sparse.common.SparseConstants;
 import org.opensearch.neuralsearch.sparse.mapper.SparseTokensFieldMapper;
+import org.opensearch.index.query.QueryBuilder;
+import org.opensearch.neuralsearch.BaseNeuralSearchIT;
+import org.opensearch.neuralsearch.plugin.NeuralSearch;
+import org.opensearch.neuralsearch.query.NeuralSparseQueryBuilder;
+import org.opensearch.neuralsearch.sparse.common.SparseConstants;
+import org.opensearch.neuralsearch.sparse.mapper.SparseTokensFieldMapper;
+import org.opensearch.neuralsearch.sparse.query.SparseAnnQueryBuilder;
 import org.opensearch.neuralsearch.stats.metrics.MetricStatName;
 
 import java.io.IOException;
@@ -383,5 +390,73 @@ public abstract class SparseBaseIT extends BaseNeuralSearchIT {
             }
         }
         return routingIds;
+    }
+
+    protected NeuralSparseQueryBuilder getNeuralSparseQueryBuilder(String field, int cut, float hf, int k, Map<String, Float> query) {
+        return getNeuralSparseQueryBuilder(field, cut, hf, k, query, null);
+    }
+
+    protected NeuralSparseQueryBuilder getNeuralSparseQueryBuilder(
+        String field,
+        int cut,
+        float hf,
+        int k,
+        Map<String, Float> query,
+        QueryBuilder filter
+    ) {
+        SparseAnnQueryBuilder annQueryBuilder = new SparseAnnQueryBuilder().queryCut(cut)
+            .fieldName(field)
+            .heapFactor(hf)
+            .k(k)
+            .queryTokens(query)
+            .filter(filter);
+
+        NeuralSparseQueryBuilder neuralSparseQueryBuilder = new NeuralSparseQueryBuilder().sparseAnnQueryBuilder(annQueryBuilder)
+            .fieldName(field)
+            .queryTokensMapSupplier(() -> query);
+        return neuralSparseQueryBuilder;
+    }
+
+    @SneakyThrows
+    protected long[] getSparseMemoryUsageStatsAcrossNodes() {
+        Request request = new Request("GET", NeuralSearch.NEURAL_BASE_URI + "/stats/" + SPARSE_MEMORY_USAGE_METRIC_NAME);
+
+        Response response = client().performRequest(request);
+        assertEquals(RestStatus.OK, RestStatus.fromCode(response.getStatusLine().getStatusCode()));
+
+        String responseBody = EntityUtils.toString(response.getEntity());
+        List<Map<String, Object>> nodeStatsResponseList = parseNodeStatsResponse(responseBody);
+
+        List<Long> sparseMemoryUsageStats = new ArrayList<>();
+        for (Map<String, Object> nodeStatsResponse : nodeStatsResponseList) {
+            // we do not use breakers.neural_search.estimated_size_in_bytes due to precision limitation by memory stats
+            String stringValue = getNestedValue(nodeStatsResponse, SPARSE_MEMORY_USAGE_METRIC_PATH).toString();
+            sparseMemoryUsageStats.add(parseFractionalSize(stringValue));
+        }
+        return sparseMemoryUsageStats.stream().mapToLong(Long::longValue).toArray();
+    }
+
+    protected static long parseFractionalSize(String value) {
+        value = value.trim().toLowerCase(Locale.ROOT);
+        double number;
+        long multiplier;
+
+        if (value.endsWith("kb")) {
+            number = Double.parseDouble(value.replace("kb", "").trim());
+            multiplier = 1024L;
+        } else if (value.endsWith("mb")) {
+            number = Double.parseDouble(value.replace("mb", "").trim());
+            multiplier = 1024L * 1024L;
+        } else if (value.endsWith("gb")) {
+            number = Double.parseDouble(value.replace("gb", "").trim());
+            multiplier = 1024L * 1024L * 1024L;
+        } else if (value.endsWith("b")) {
+            number = Double.parseDouble(value.replace("b", "").trim());
+            multiplier = 1L;
+        } else {
+            throw new IllegalArgumentException("Unknown size unit: " + value);
+        }
+
+        return Math.round(number * multiplier);
     }
 }
