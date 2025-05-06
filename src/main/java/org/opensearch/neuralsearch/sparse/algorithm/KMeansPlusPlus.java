@@ -108,7 +108,7 @@ public class KMeansPlusPlus implements Clustering {
         // Identify small clusters and collect their documents for reassignment
         List<DocFreq> docsToReassign = new ArrayList<>();
         List<Integer> validClusterIds = new ArrayList<>();
-        for (int i = 0; i < docAssignments.size(); i++) {
+        for (int i = 0; i < num_cluster; i++) {
             if (docAssignments.get(i).size() <= MINIMAL_DOC_SIZE_OF_CLUSTER) {
                 // This is a small cluster - collect its documents for reassignment
                 docsToReassign.addAll(docAssignments.get(i));
