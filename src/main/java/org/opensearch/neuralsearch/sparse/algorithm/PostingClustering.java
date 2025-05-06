@@ -16,7 +16,7 @@ import java.util.List;
  */
 public class PostingClustering {
 
-    private final static int MINIMAL_DOC_SIZE_OF_CLUSTER = 10;
+    final static int MINIMAL_DOC_SIZE_OF_CLUSTER = 10;
     private final int lambda;
     private final Clustering clustering;
     private final int beta;
