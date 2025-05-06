@@ -62,13 +62,17 @@ public class SparseDocValuesConsumer extends DocValuesConsumer {
             }
         }
         BinaryDocValues binaryDocValues = valuesProducer.getBinary(field);
-        int docId;
         InMemoryKey.IndexKey key = new InMemoryKey.IndexKey(this.state.segmentInfo, field);
-        SparseVectorForwardIndex index = SparseVectorForwardIndex.getOrCreate(key);
-        SparseVectorForwardIndex.SparseVectorForwardIndexWriter writer = index.getForwardIndexWriter();
-        while ((docId = binaryDocValues.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+        SparseVectorForwardIndex.SparseVectorForwardIndexWriter writer = InMemorySparseVectorForwardIndex.getOrCreate(key)
+            .getForwardIndexWriter();
+        if (writer == null) {
+            throw new IllegalStateException("Forward index writer is null");
+        }
+        int docId = binaryDocValues.nextDoc();
+        while (docId != DocIdSetIterator.NO_MORE_DOCS) {
             BytesRef bytesRef = binaryDocValues.binaryValue();
             writer.write(docId, bytesRef);
+            docId = binaryDocValues.nextDoc();
         }
     }
 
