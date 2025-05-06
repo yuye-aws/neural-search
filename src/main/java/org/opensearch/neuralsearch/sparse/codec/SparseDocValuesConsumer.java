@@ -19,8 +19,6 @@ import org.opensearch.neuralsearch.sparse.common.InMemoryKey;
 import org.opensearch.neuralsearch.sparse.common.MergeHelper;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * A DocValuesConsumer that writes sparse doc values to a segment.
@@ -60,7 +58,8 @@ public class SparseDocValuesConsumer extends DocValuesConsumer {
         }
         BinaryDocValues binaryDocValues = valuesProducer.getBinary(field);
         InMemoryKey.IndexKey key = new InMemoryKey.IndexKey(this.state.segmentInfo, field);
-        SparseVectorForwardIndex.SparseVectorForwardIndexWriter writer = InMemorySparseVectorForwardIndex.getOrCreate(key).getForwardIndexWriter();
+        SparseVectorForwardIndex.SparseVectorForwardIndexWriter writer = InMemorySparseVectorForwardIndex.getOrCreate(key)
+            .getForwardIndexWriter();
         if (writer == null) {
             throw new IllegalStateException("Forward index writer is null");
         }
