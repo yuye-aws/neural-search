@@ -108,20 +108,24 @@ public class KMeansPlusPlus implements Clustering {
         // Identify small clusters and collect their documents for reassignment
         List<DocFreq> docsToReassign = new ArrayList<>();
         List<Integer> validClusterIds = new ArrayList<>();
+
+        // Identify valid clusters
         for (int i = 0; i < num_cluster; i++) {
-            if (docAssignments.get(i).size() <= MINIMAL_DOC_SIZE_OF_CLUSTER) {
-                // This is a small cluster - collect its documents for reassignment
-                docsToReassign.addAll(docAssignments.get(i));
-                // Clear this cluster's document list
-                docAssignments.get(i).clear();
-            } else {
-                // This is a valid cluster
+            if (docAssignments.get(i).size() > MINIMAL_DOC_SIZE_OF_CLUSTER) {
                 validClusterIds.add(i);
             }
         }
 
-        // If there are documents to reassign and at least one valid cluster
-        if (!docsToReassign.isEmpty() && !validClusterIds.isEmpty()) {
+        // Only proceed with reassignment if we have valid clusters to reassign to
+        if (!validClusterIds.isEmpty()) {
+            // Collect documents from small clusters
+            for (int i = 0; i < num_cluster; i++) {
+                if (docAssignments.get(i).size() <= MINIMAL_DOC_SIZE_OF_CLUSTER) {
+                    docsToReassign.addAll(docAssignments.get(i));
+                    docAssignments.get(i).clear();
+                }
+            }
+
             // Reassign documents from small clusters
             for (DocFreq docFreq : docsToReassign) {
                 int bestCluster = assignDocumentToCluster(docFreq, reader, denseCentroids, validClusterIds);
