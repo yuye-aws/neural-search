@@ -75,8 +75,8 @@ public class KMeansPlusPlus implements Clustering {
         }
         int size = docFreqs.size();
 
-        // Ensure cluster not exceed doc size
-        int num_cluster = Math.min(beta, size);
+        // Avoid number of clusters too large
+        int num_cluster = Math.min(beta, size / MINIMAL_CLUSTER_DOC_SIZE);
 
         // Generate beta unique random centers
         Random random = new Random();
