@@ -29,33 +29,42 @@ public class KMeansPlusPlus implements Clustering {
     private final SparseVectorReader reader;
 
     /**
-     * Assigns a document to the best cluster based on similarity.
+     * Assigns documents to clusters based on similarity.
      *
-     * @param docVector The document vector
+     * @param documents The list of documents to assign
+     * @param docAssignments The list of document assignments for each cluster
      * @param denseCentroids The list of cluster centroids
      * @param clusterIds The list of cluster IDs to consider
-     * @return The ID of the best cluster, or -1 if document couldn't be read
      */
-    private int assignDocumentToCluster(SparseVector docVector, List<float[]> denseCentroids, List<Integer> clusterIds) {
-        if (docVector == null) {
-            return -1;
-        }
+    private void assignDocumentsToCluster(
+        List<DocFreq> documents,
+        List<List<DocFreq>> docAssignments,
+        List<float[]> denseCentroids,
+        List<Integer> clusterIds
+    ) {
 
-        int bestCluster = 0;
-        float maxScore = Float.MIN_VALUE;
+        for (DocFreq docFreq : documents) {
+            SparseVector docVector = reader.read(docFreq.getDocID());
+            if (docVector == null) {
+                continue;
+            }
 
-        for (int clusterId : clusterIds) {
-            float[] center = denseCentroids.get(clusterId);
-            if (center != null) {
-                float score = docVector.dotProduct(center);
-                if (score > maxScore) {
-                    maxScore = score;
-                    bestCluster = clusterId;
+            int bestCluster = 0;
+            float maxScore = Float.MIN_VALUE;
+
+            for (int clusterId : clusterIds) {
+                float[] center = denseCentroids.get(clusterId);
+                if (center != null) {
+                    float score = docVector.dotProduct(center);
+                    if (score > maxScore) {
+                        maxScore = score;
+                        bestCluster = clusterId;
+                    }
                 }
             }
-        }
 
-        return bestCluster;
+            docAssignments.get(bestCluster).add(docFreq);
+        }
     }
 
     @Override
@@ -90,13 +99,7 @@ public class KMeansPlusPlus implements Clustering {
         List<Integer> allClusterIds = IntStream.range(0, num_cluster).boxed().collect(Collectors.toList());
 
         // Assign documents to clusters
-        for (DocFreq docFreq : docFreqs) {
-            SparseVector docVector = reader.read(docFreq.getDocID());
-            int bestCluster = assignDocumentToCluster(docVector, denseCentroids, allClusterIds);
-            if (bestCluster >= 0) {
-                docAssignments.get(bestCluster).add(docFreq);
-            }
-        }
+        assignDocumentsToCluster(docFreqs, docAssignments, denseCentroids, allClusterIds);
 
         // Identify small clusters and collect their documents for reassignment
         List<DocFreq> docsToReassign = new ArrayList<>();
@@ -120,13 +123,7 @@ public class KMeansPlusPlus implements Clustering {
             }
 
             // Reassign documents from small clusters
-            for (DocFreq docFreq : docsToReassign) {
-                SparseVector docVector = reader.read(docFreq.getDocID());
-                int bestCluster = assignDocumentToCluster(docVector, denseCentroids, allClusterIds);
-                if (bestCluster >= 0) {
-                    docAssignments.get(bestCluster).add(docFreq);
-                }
-            }
+            assignDocumentsToCluster(docsToReassign, docAssignments, denseCentroids, validClusterIds);
         }
 
         List<DocumentCluster> clusters = new ArrayList<>();
