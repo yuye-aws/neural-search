@@ -13,14 +13,17 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
-import static org.opensearch.neuralsearch.sparse.algorithm.PostingClustering.MINIMAL_DOC_SIZE_OF_CLUSTER;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * KMeans++ clustering algorithm
  */
 @AllArgsConstructor
 public class KMeansPlusPlus implements Clustering {
+
+    private final static int MINIMAL_CLUSTER_DOC_SIZE = 10;
+
     private final float alpha;
     private final int beta;
     private final SparseVectorReader reader;
@@ -28,24 +31,17 @@ public class KMeansPlusPlus implements Clustering {
     /**
      * Assigns a document to the best cluster based on similarity.
      *
-     * @param docFreq The document frequency object to assign
-     * @param reader The document vector reader
+     * @param docVector The document vector
      * @param denseCentroids The list of cluster centroids
      * @param clusterIds The list of cluster IDs to consider
      * @return The ID of the best cluster, or -1 if document couldn't be read
      */
-    private int assignDocumentToCluster(
-        DocFreq docFreq,
-        SparseVectorReader reader,
-        List<float[]> denseCentroids,
-        List<Integer> clusterIds
-    ) {
-        SparseVector docVector = reader.read(docFreq.getDocID());
+    private int assignDocumentToCluster(SparseVector docVector, List<float[]> denseCentroids, List<Integer> clusterIds) {
         if (docVector == null) {
             return -1;
         }
 
-        int bestCluster = -1;
+        int bestCluster = 0;
         float maxScore = Float.MIN_VALUE;
 
         for (int clusterId : clusterIds) {
@@ -70,9 +66,8 @@ public class KMeansPlusPlus implements Clustering {
         }
         int size = docFreqs.size();
 
-        // Ensure at least one cluster
+        // Ensure cluster not exceed doc size
         int num_cluster = Math.min(beta, size);
-        num_cluster = Math.max(1, num_cluster);
 
         // Generate beta unique random centers
         Random random = new Random();
@@ -92,14 +87,12 @@ public class KMeansPlusPlus implements Clustering {
         }
 
         // Create a list of all cluster indices
-        List<Integer> allClusterIds = new ArrayList<>(num_cluster);
-        for (int i = 0; i < num_cluster; i++) {
-            allClusterIds.add(i);
-        }
+        List<Integer> allClusterIds = IntStream.range(0, num_cluster).boxed().collect(Collectors.toList());
 
         // Assign documents to clusters
         for (DocFreq docFreq : docFreqs) {
-            int bestCluster = assignDocumentToCluster(docFreq, reader, denseCentroids, allClusterIds);
+            SparseVector docVector = reader.read(docFreq.getDocID());
+            int bestCluster = assignDocumentToCluster(docVector, denseCentroids, allClusterIds);
             if (bestCluster >= 0) {
                 docAssignments.get(bestCluster).add(docFreq);
             }
@@ -111,7 +104,7 @@ public class KMeansPlusPlus implements Clustering {
 
         // Identify valid clusters
         for (int i = 0; i < num_cluster; i++) {
-            if (docAssignments.get(i).size() > MINIMAL_DOC_SIZE_OF_CLUSTER) {
+            if (docAssignments.get(i).size() >= MINIMAL_CLUSTER_DOC_SIZE) {
                 validClusterIds.add(i);
             }
         }
@@ -120,7 +113,7 @@ public class KMeansPlusPlus implements Clustering {
         if (!validClusterIds.isEmpty()) {
             // Collect documents from small clusters
             for (int i = 0; i < num_cluster; i++) {
-                if (docAssignments.get(i).size() <= MINIMAL_DOC_SIZE_OF_CLUSTER) {
+                if (docAssignments.get(i).size() < MINIMAL_CLUSTER_DOC_SIZE) {
                     docsToReassign.addAll(docAssignments.get(i));
                     docAssignments.get(i).clear();
                 }
@@ -128,7 +121,8 @@ public class KMeansPlusPlus implements Clustering {
 
             // Reassign documents from small clusters
             for (DocFreq docFreq : docsToReassign) {
-                int bestCluster = assignDocumentToCluster(docFreq, reader, denseCentroids, validClusterIds);
+                SparseVector docVector = reader.read(docFreq.getDocID());
+                int bestCluster = assignDocumentToCluster(docVector, denseCentroids, allClusterIds);
                 if (bestCluster >= 0) {
                     docAssignments.get(bestCluster).add(docFreq);
                 }
