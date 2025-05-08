@@ -101,26 +101,24 @@ public class KMeansPlusPlus implements Clustering {
         // Assign documents to clusters
         assignDocumentsToCluster(docFreqs, docAssignments, denseCentroids, allClusterIds);
 
-        // Identify small clusters and collect their documents for reassignment
-        List<DocFreq> docsToReassign = new ArrayList<>();
-        List<Integer> validClusterIds = new ArrayList<>();
-
         // Identify valid clusters
-        for (int i = 0; i < num_cluster; i++) {
-            if (docAssignments.get(i).size() >= MINIMAL_CLUSTER_DOC_SIZE) {
-                validClusterIds.add(i);
-            }
-        }
+        List<Integer> validClusterIds = IntStream.range(0, num_cluster)
+            .filter(i -> docAssignments.get(i).size() >= MINIMAL_CLUSTER_DOC_SIZE)
+            .boxed()
+            .collect(Collectors.toList());
 
         // Only proceed with reassignment if we have valid clusters to reassign to
         if (!validClusterIds.isEmpty()) {
-            // Collect documents from small clusters
-            for (int i = 0; i < num_cluster; i++) {
-                if (docAssignments.get(i).size() < MINIMAL_CLUSTER_DOC_SIZE) {
-                    docsToReassign.addAll(docAssignments.get(i));
+            // Identify small clusters and collect their documents for reassignment using streams
+            List<DocFreq> docsToReassign = IntStream.range(0, num_cluster)
+                .filter(i -> docAssignments.get(i).size() < MINIMAL_CLUSTER_DOC_SIZE)
+                .mapToObj(i -> {
+                    List<DocFreq> docs = new ArrayList<>(docAssignments.get(i));
                     docAssignments.get(i).clear();
-                }
-            }
+                    return docs;
+                })
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
 
             // Reassign documents from small clusters
             assignDocumentsToCluster(docsToReassign, docAssignments, denseCentroids, validClusterIds);
