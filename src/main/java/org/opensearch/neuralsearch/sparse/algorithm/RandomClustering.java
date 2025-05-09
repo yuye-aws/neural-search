@@ -17,13 +17,14 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * KMeans++ clustering algorithm
+ * Random clustering algorithm
  */
 @AllArgsConstructor
-public class KMeansPlusPlus implements Clustering {
+public class RandomClustering implements Clustering {
 
-    private final static int MINIMAL_CLUSTER_DOC_SIZE = 10;
+    private final static int MINIMAL_CLUSTER_DOC_SIZE = 3;
 
+    private final int lambda;
     private final float alpha;
     private final int beta;
     private final SparseVectorReader reader;
@@ -76,7 +77,7 @@ public class KMeansPlusPlus implements Clustering {
         int size = docFreqs.size();
 
         // Avoid number of clusters too large
-        int num_cluster = Math.min(beta, size / MINIMAL_CLUSTER_DOC_SIZE);
+        int num_cluster = Math.min(beta, (int) Math.ceil((double) (size * lambda) / beta));
 
         // Generate beta unique random centers
         Random random = new Random();
