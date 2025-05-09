@@ -76,8 +76,8 @@ public class RandomClustering implements Clustering {
         }
         int size = docFreqs.size();
 
-        // Avoid number of clusters too large
-        int num_cluster = Math.min(beta, (int) Math.ceil((double) (size * lambda) / beta));
+        // Adjust num_cluster according to posting length
+        int num_cluster = (int) Math.ceil((double) (size * lambda) / beta);
 
         // Generate beta unique random centers
         Random random = new Random();
