@@ -52,7 +52,6 @@ public class PostingWithClustersScorer extends Scorer {
     private Terms terms;
     private float score;
     private final Bits acceptedDocs;
-    private float heapThreshold = Float.MIN_VALUE;
 
     public PostingWithClustersScorer(
         String fieldName,
@@ -107,14 +106,17 @@ public class PostingWithClustersScorer extends Scorer {
         }
     }
 
+    private boolean isHeapFull() {
+        return scoreHeap.size() == sparseQueryContext.getK();
+    }
 
     private void addToHeap(Pair<Integer, Float> pair) {
-        if (pair.getRight() > heapThreshold) {
+        if (!isHeapFull()) {
             scoreHeap.add(pair);
-            if (scoreHeap.size() > sparseQueryContext.getK()) {
-                scoreHeap.poll();
-                heapThreshold = scoreHeap.peek().getRight();
-            }
+        } else if (pair.getRight() > scoreHeap.peek().getRight()) {
+            // Replace root element directly instead of doing poll + offer
+            scoreHeap.poll();
+            scoreHeap.add(pair);
         }
     }
 
