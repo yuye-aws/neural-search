@@ -16,6 +16,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.apache.lucene.util.Accountables;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.opensearch.common.util.concurrent.OpenSearchExecutors;
+import org.opensearch.index.IndexModule;
+import org.opensearch.index.IndexSettings;
+import org.opensearch.index.codec.CodecServiceFactory;
+import org.opensearch.index.mapper.Mapper;
 import org.opensearch.ml.client.MachineLearningNodeClient;
 import org.opensearch.neuralsearch.highlight.SemanticHighlighter;
 import org.opensearch.neuralsearch.highlight.SemanticHighlighterEngine;
@@ -23,8 +30,19 @@ import org.opensearch.neuralsearch.highlight.extractor.QueryTextExtractorRegistr
 import com.google.common.collect.ImmutableList;
 import org.opensearch.action.ActionRequest;
 import org.opensearch.neuralsearch.settings.NeuralSearchSettingsAccessor;
+import org.opensearch.neuralsearch.sparse.SparseIndexEventListener;
+import org.opensearch.neuralsearch.sparse.SparseSettings;
+import org.opensearch.neuralsearch.sparse.algorithm.ClusterTrainingRunning;
+import org.opensearch.neuralsearch.sparse.codec.InMemoryClusteredPosting;
+import org.opensearch.neuralsearch.sparse.codec.InMemorySparseVectorForwardIndex;
+import org.opensearch.neuralsearch.sparse.codec.SparseCodecService;
+import org.opensearch.neuralsearch.sparse.mapper.SparseTokensFieldMapper;
+import org.opensearch.neuralsearch.sparse.query.SparseAnnQueryBuilder;
 import org.opensearch.neuralsearch.stats.events.EventStatsManager;
 import org.opensearch.neuralsearch.stats.info.InfoStatsManager;
+import org.opensearch.plugins.EnginePlugin;
+import org.opensearch.plugins.MapperPlugin;
+import org.opensearch.threadpool.FixedExecutorBuilder;
 import org.opensearch.transport.client.Client;
 import org.opensearch.cluster.metadata.IndexNameExpressionResolver;
 import org.opensearch.cluster.node.DiscoveryNodes;
@@ -101,7 +119,15 @@ import lombok.extern.log4j.Log4j2;
  * Neural Search plugin class
  */
 @Log4j2
-public class NeuralSearch extends Plugin implements ActionPlugin, SearchPlugin, IngestPlugin, ExtensiblePlugin, SearchPipelinePlugin {
+public class NeuralSearch extends Plugin
+    implements
+        ActionPlugin,
+        SearchPlugin,
+        IngestPlugin,
+        ExtensiblePlugin,
+        SearchPipelinePlugin,
+        MapperPlugin,
+        EnginePlugin {
     private MLCommonsClientAccessor clientAccessor;
     private NormalizationProcessorWorkflow normalizationProcessorWorkflow;
     private NeuralSearchSettingsAccessor settingsAccessor;
@@ -146,6 +172,7 @@ public class NeuralSearch extends Plugin implements ActionPlugin, SearchPlugin, 
         pipelineServiceUtil = new PipelineServiceUtil(clusterService);
         infoStatsManager = new InfoStatsManager(NeuralSearchClusterUtil.instance(), settingsAccessor, pipelineServiceUtil);
         EventStatsManager.instance().initialize(settingsAccessor);
+        ClusterTrainingRunning.initialize(threadPool);
         return List.of(clientAccessor, EventStatsManager.instance(), infoStatsManager);
     }
 
@@ -154,7 +181,8 @@ public class NeuralSearch extends Plugin implements ActionPlugin, SearchPlugin, 
         return Arrays.asList(
             new QuerySpec<>(NeuralQueryBuilder.NAME, NeuralQueryBuilder::new, NeuralQueryBuilder::fromXContent),
             new QuerySpec<>(HybridQueryBuilder.NAME, HybridQueryBuilder::new, HybridQueryBuilder::fromXContent),
-            new QuerySpec<>(NeuralSparseQueryBuilder.NAME, NeuralSparseQueryBuilder::new, NeuralSparseQueryBuilder::fromXContent)
+            new QuerySpec<>(NeuralSparseQueryBuilder.NAME, NeuralSparseQueryBuilder::new, NeuralSparseQueryBuilder::fromXContent),
+            new QuerySpec<>(SparseAnnQueryBuilder.NAME, SparseAnnQueryBuilder::new, SparseAnnQueryBuilder::fromXContent)
         );
     }
 
@@ -179,7 +207,18 @@ public class NeuralSearch extends Plugin implements ActionPlugin, SearchPlugin, 
 
     @Override
     public List<ExecutorBuilder<?>> getExecutorBuilders(Settings settings) {
-        return List.of(HybridQueryExecutor.getExecutorBuilder(settings));
+        int allocatedProcessors = OpenSearchExecutors.allocatedProcessors(settings);
+        return List.of(
+            HybridQueryExecutor.getExecutorBuilder(settings),
+            new FixedExecutorBuilder(
+                settings,
+                ClusterTrainingRunning.THREAD_POOL_NAME,
+                allocatedProcessors,
+                -1,
+                ClusterTrainingRunning.THREAD_POOL_NAME,
+                false
+            )
+        );
     }
 
     @Override
@@ -242,7 +281,13 @@ public class NeuralSearch extends Plugin implements ActionPlugin, SearchPlugin, 
 
     @Override
     public List<Setting<?>> getSettings() {
-        return List.of(NEURAL_SEARCH_HYBRID_SEARCH_DISABLED, RERANKER_MAX_DOC_FIELDS, NEURAL_STATS_ENABLED);
+        return List.of(
+            NEURAL_SEARCH_HYBRID_SEARCH_DISABLED,
+            RERANKER_MAX_DOC_FIELDS,
+            NEURAL_STATS_ENABLED,
+            SparseSettings.IS_SPARSE_INDEX_SETTING,
+            SparseSettings.SPARSE_MEMORY_SETTING
+        );
     }
 
     @Override
@@ -280,11 +325,40 @@ public class NeuralSearch extends Plugin implements ActionPlugin, SearchPlugin, 
         );
     }
 
+    @Override
+    public Map<String, Mapper.TypeParser> getMappers() {
+        return Collections.singletonMap(SparseTokensFieldMapper.CONTENT_TYPE, SparseTokensFieldMapper.PARSER);
+    }
+
+    @Override
+    public Optional<CodecServiceFactory> getCustomCodecServiceFactory(IndexSettings indexSettings) {
+        if (indexSettings.getValue(SparseSettings.IS_SPARSE_INDEX_SETTING)) {
+            return Optional.of((config) -> new SparseCodecService(config, indexSettings));
+        }
+        return Optional.empty();
+    }
+
     /**
      * Register semantic highlighter
      */
     @Override
     public Map<String, Highlighter> getHighlighters() {
         return Collections.singletonMap(SemanticHighlighter.NAME, semanticHighlighter);
+    }
+
+    @Override
+    public void onIndexModule(IndexModule indexModule) {
+        if (SparseSettings.IS_SPARSE_INDEX_SETTING.get(indexModule.getSettings())) {
+            indexModule.addIndexEventListener(new SparseIndexEventListener());
+            indexModule.addSettingsUpdateConsumer(SparseSettings.SPARSE_MEMORY_SETTING, (v) -> {
+                // just to log in-memory data usage
+                InMemoryClusteredPosting inMemoryClusteredPosting = new InMemoryClusteredPosting();
+                log.info(
+                    "memory usage: forward index {}, posting: {}",
+                    RamUsageEstimator.humanReadableUnits(InMemorySparseVectorForwardIndex.memUsage()),
+                    Accountables.toString(inMemoryClusteredPosting)
+                );
+            });
+        }
     }
 }
