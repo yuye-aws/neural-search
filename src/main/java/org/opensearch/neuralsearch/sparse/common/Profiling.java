@@ -9,7 +9,6 @@ import lombok.extern.log4j.Log4j2;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Log4j2
@@ -91,7 +90,7 @@ public class Profiling {
     }
 
     private static class ItemData {
-        private AtomicInteger count = new AtomicInteger(0);
+        private AtomicLong count = new AtomicLong(0);
         private AtomicLong time = new AtomicLong(0);
 
         long begin() {
