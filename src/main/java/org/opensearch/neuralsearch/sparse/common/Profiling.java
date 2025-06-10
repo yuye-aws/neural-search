@@ -70,7 +70,8 @@ public class Profiling {
         CLUSTERSHOULDNOTSKIP(7),
         MERGE(8),
         RANDOMCLUSTER(9),
-        CLUSTERDP(10);
+        CLUSTERDP(10),
+        CLUSTERSUMMARIZE(11);
 
         @Getter
         private int id;

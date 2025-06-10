@@ -76,7 +76,9 @@ public class RandomClustering implements Clustering {
         for (int i = 0; i < num_cluster; ++i) {
             if (docAssignments.get(i).isEmpty()) continue;
             DocumentCluster cluster = new DocumentCluster(null, docAssignments.get(i), false);
+            long startSummarize = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTERSUMMARIZE);
             PostingsProcessor.summarize(cluster, this.reader, this.alpha);
+            Profiling.INSTANCE.end(Profiling.ItemId.CLUSTERSUMMARIZE, startSummarize);
             clusters.add(cluster);
         }
         Profiling.INSTANCE.end(Profiling.ItemId.RANDOMCLUSTER, startRandomCluster);
