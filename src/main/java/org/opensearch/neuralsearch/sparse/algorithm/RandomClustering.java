@@ -60,13 +60,20 @@ public class RandomClustering implements Clustering {
         for (DocFreq docFreq : docFreqs) {
             int centerIdx = 0;
             float maxScore = Float.MIN_VALUE;
+            long startReadSparseVector = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTERREADSPARSEVECTOR);
             SparseVector docVector = reader.read(docFreq.getDocID());
+            Profiling.INSTANCE.end(Profiling.ItemId.CLUSTERREADSPARSEVECTOR, startReadSparseVector);
+
             if (docVector == null) {
                 continue;
             }
+
+            long startDocumentTotalDP = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTERDOCUMENTTOTALDP);
             for (int i = 0; i < num_cluster; i++) {
                 float score = Float.MIN_VALUE;
+                long startGetDenseCentroid = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTERGETDENSECENTROID);
                 byte[] center = denseCentroids.get(i);
+                Profiling.INSTANCE.end(Profiling.ItemId.CLUSTERGETDENSECENTROID, startGetDenseCentroid);
                 if (center != null) {
                     long startDP = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTERDP);
                     score = docVector.dotProduct(center);
@@ -75,11 +82,17 @@ public class RandomClustering implements Clustering {
                     log.info("Null Center");
                 }
                 if (score > maxScore) {
+                    long startUpdateCenterIdx = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTERUPDATECENTERIDX);
                     maxScore = score;
                     centerIdx = i;
+                    Profiling.INSTANCE.end(Profiling.ItemId.CLUSTERUPDATECENTERIDX, startUpdateCenterIdx);
                 }
             }
+            Profiling.INSTANCE.end(Profiling.ItemId.CLUSTERDOCUMENTTOTALDP, startDocumentTotalDP);
+
+            long startUpdateAssignment = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTERUPDATEASSIGNMENT);
             docAssignments.get(centerIdx).add(docFreq);
+            Profiling.INSTANCE.end(Profiling.ItemId.CLUSTERUPDATEASSIGNMENT, startUpdateAssignment);
         }
         Profiling.INSTANCE.end(Profiling.ItemId.CLUSTERTOTALDP, startTotalDP);
 
