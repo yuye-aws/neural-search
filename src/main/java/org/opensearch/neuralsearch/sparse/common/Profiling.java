@@ -71,7 +71,11 @@ public class Profiling {
         MERGE(8),
         RANDOMCLUSTER(9),
         CLUSTERDP(10),
-        CLUSTERSUMMARIZE(11);
+        CLUSTERSUMMARIZE(11),
+        CLUSTERTODENSE(12),
+        CLUSTERRANDOMINITIALIZE(13),
+        CLUSTERTOTALDP(14),
+        CLUSTERTOTALSUMMARIZE(15);
 
         @Getter
         private int id;
