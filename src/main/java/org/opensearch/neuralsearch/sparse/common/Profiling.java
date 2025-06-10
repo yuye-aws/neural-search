@@ -68,7 +68,9 @@ public class Profiling {
         HEAP(5),
         CLUSTER(6),
         CLUSTERSHOULDNOTSKIP(7),
-        CLUSTERDP(8);
+        MERGE(8),
+        RANDOMCLUSTER(9),
+        CLUSTERDP(10);
 
         @Getter
         private int id;

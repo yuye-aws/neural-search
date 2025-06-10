@@ -28,6 +28,7 @@ public class RandomClustering implements Clustering {
 
     @Override
     public List<DocumentCluster> cluster(List<DocFreq> docFreqs) throws IOException {
+        long startRandomCluster = Profiling.INSTANCE.begin(Profiling.ItemId.RANDOMCLUSTER);
         if (beta == 1) {
             DocumentCluster cluster = new DocumentCluster(null, docFreqs, true);
             return List.of(cluster);
@@ -60,9 +61,9 @@ public class RandomClustering implements Clustering {
                 float score = Float.MIN_VALUE;
                 byte[] center = denseCentroids.get(i);
                 if (center != null) {
-                    long start = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTERDP);
+                    long startDP = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTERDP);
                     score = docVector.dotProduct(center);
-                    Profiling.INSTANCE.end(Profiling.ItemId.CLUSTERDP, start);
+                    Profiling.INSTANCE.end(Profiling.ItemId.CLUSTERDP, startDP);
                 }
                 if (score > maxScore) {
                     maxScore = score;
@@ -78,6 +79,7 @@ public class RandomClustering implements Clustering {
             PostingsProcessor.summarize(cluster, this.reader, this.alpha);
             clusters.add(cluster);
         }
+        Profiling.INSTANCE.end(Profiling.ItemId.RANDOMCLUSTER, startRandomCluster);
         return clusters;
     }
 }
