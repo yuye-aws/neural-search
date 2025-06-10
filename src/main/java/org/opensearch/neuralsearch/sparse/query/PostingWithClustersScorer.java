@@ -23,7 +23,6 @@ import org.opensearch.neuralsearch.sparse.codec.SparsePostingsEnum;
 import org.opensearch.neuralsearch.sparse.codec.SparseVectorForwardIndex;
 import org.opensearch.neuralsearch.sparse.common.DocFreqIterator;
 import org.opensearch.neuralsearch.sparse.common.IteratorWrapper;
-import org.opensearch.neuralsearch.sparse.common.Profiling;
 import org.opensearch.neuralsearch.sparse.common.SparseVector;
 import org.opensearch.neuralsearch.sparse.common.SparseVectorReader;
 
@@ -142,7 +141,6 @@ public class PostingWithClustersScorer extends Scorer {
             @Override
             public int nextDoc() throws IOException {
                 while (subScorersIndex < subScorers.size()) {
-                    long start = Profiling.INSTANCE.begin(Profiling.ItemId.NEXTDOC);
                     Scorer scorer = subScorers.get(subScorersIndex);
                     int docId = scorer.iterator().nextDoc();
                     // reach the end of current cluster;
@@ -150,32 +148,21 @@ public class PostingWithClustersScorer extends Scorer {
                         ++subScorersIndex;
                         continue;
                     }
-                    Profiling.INSTANCE.end(Profiling.ItemId.NEXTDOC, start);
-                    start = Profiling.INSTANCE.begin(Profiling.ItemId.ACCEPTED);
                     // doc marked as deleted
                     if (acceptedDocs != null && !acceptedDocs.get(docId)) {
                         continue;
                     }
-                    Profiling.INSTANCE.end(Profiling.ItemId.ACCEPTED, start);
-                    start = Profiling.INSTANCE.begin(Profiling.ItemId.VISITED);
                     // already visited this docId
                     if (visitedDocId.get(docId)) {
                         continue;
                     }
                     visitedDocId.set(docId);
-                    Profiling.INSTANCE.end(Profiling.ItemId.VISITED, start);
-                    start = Profiling.INSTANCE.begin(Profiling.ItemId.READ);
                     SparseVector doc = reader.read(docId);
                     if (doc == null) {
                         continue;
                     }
-                    Profiling.INSTANCE.end(Profiling.ItemId.READ, start);
-                    start = Profiling.INSTANCE.begin(Profiling.ItemId.DP);
                     score = doc.dotProduct(queryDenseVector);
-                    Profiling.INSTANCE.end(Profiling.ItemId.DP, start);
-                    start = Profiling.INSTANCE.begin(Profiling.ItemId.HEAP);
                     addToHeap(Pair.of(docId, score));
-                    Profiling.INSTANCE.end(Profiling.ItemId.HEAP, start);
                     return docId;
                 }
                 return NO_MORE_DOCS;
@@ -227,8 +214,6 @@ public class PostingWithClustersScorer extends Scorer {
                     DocumentCluster cluster = clusterIter.next();
                     while (cluster != null) {
                         if (cluster.isShouldNotSkip()) {
-                            long start = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTERSHOULDNOTSKIP);
-                            Profiling.INSTANCE.end(Profiling.ItemId.CLUSTERSHOULDNOTSKIP, start);
                             return cluster;
                         }
                         int score = cluster.getSummary().dotProduct(queryDenseVector);
@@ -236,8 +221,6 @@ public class PostingWithClustersScorer extends Scorer {
                             && score < Objects.requireNonNull(scoreHeap.peek()).getRight() / sparseQueryContext.getHeapFactor()) {
                             cluster = clusterIter.next();
                         } else {
-                            long start = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTER);
-                            Profiling.INSTANCE.end(Profiling.ItemId.CLUSTER, start);
                             return cluster;
                         }
                     }

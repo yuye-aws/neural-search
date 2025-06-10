@@ -24,7 +24,6 @@ import org.opensearch.neuralsearch.sparse.common.DocFreq;
 import org.opensearch.neuralsearch.sparse.common.DocFreqIterator;
 import org.opensearch.neuralsearch.sparse.common.InMemoryKey;
 import org.opensearch.neuralsearch.sparse.common.IteratorWrapper;
-import org.opensearch.neuralsearch.sparse.common.Profiling;
 import org.opensearch.neuralsearch.sparse.mapper.SparseMethodContext;
 
 import java.io.IOException;
@@ -50,7 +49,6 @@ public class SparsePostingsReader {
 
     public void merge(SparseTermsLuceneWriter sparseTermsLuceneWriter, ClusteredPostingTermsWriter clusteredPostingTermsWriter)
         throws Exception {
-        long startMerge = Profiling.INSTANCE.begin(Profiling.ItemId.MERGE);
         int docCount = 0;
         for (int n : mergeState.maxDocs) {
             docCount += n;
@@ -128,7 +126,6 @@ public class SparsePostingsReader {
                 }
             }
         }
-        Profiling.INSTANCE.end(Profiling.ItemId.MERGE, startMerge);
     }
 
     // get all terms of old segments from InMemoryClusteredPosting
