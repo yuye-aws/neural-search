@@ -233,13 +233,15 @@ public class PostingWithClustersScorer extends Scorer {
                             Profiling.INSTANCE.end(Profiling.ItemId.CLUSTERSHOULDNOTSKIP, start);
                             return cluster;
                         }
+                        long startDP = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTERSUMMARYDP);
                         int score = cluster.getSummary().dotProduct(queryDenseVector);
+                        Profiling.INSTANCE.end(Profiling.ItemId.CLUSTERSUMMARYDP, startDP);
                         if (scoreHeap.size() == sparseQueryContext.getK()
                             && score < Objects.requireNonNull(scoreHeap.peek()).getRight() / sparseQueryContext.getHeapFactor()) {
                             cluster = clusterIter.next();
                         } else {
-                            long start = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTER);
-                            Profiling.INSTANCE.end(Profiling.ItemId.CLUSTER, start);
+                            long startCluster = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTER);
+                            Profiling.INSTANCE.end(Profiling.ItemId.CLUSTER, startCluster);
                             return cluster;
                         }
                     }
