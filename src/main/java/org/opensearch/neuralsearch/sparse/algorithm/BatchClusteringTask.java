@@ -82,7 +82,7 @@ public class BatchClusteringTask implements Supplier<List<Pair<BytesRef, Posting
                     }),
                     beta
                 );
-                List<DocumentCluster> clusters = postingClustering.cluster(docFreqs);
+                List<DocumentCluster> clusters = postingClustering.cluster(docFreqs, term);
                 postingClusters.add(Pair.of(term, new PostingClusters(clusters)));
                 InMemoryClusteredPosting.InMemoryClusteredPostingWriter.writePostingClusters(key, term, clusters);
             }

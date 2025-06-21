@@ -7,6 +7,7 @@ package org.opensearch.neuralsearch.sparse.algorithm;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.log4j.Log4j2;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.opensearch.neuralsearch.sparse.common.ArrayIterator;
@@ -17,6 +18,7 @@ import org.opensearch.neuralsearch.sparse.common.IteratorWrapper;
 import org.opensearch.neuralsearch.sparse.common.SparseVector;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -28,6 +30,7 @@ import java.util.List;
  */
 @Getter
 @Setter
+@Log4j2
 @EqualsAndHashCode
 public class DocumentCluster implements Accountable {
     private SparseVector summary;
@@ -54,6 +57,15 @@ public class DocumentCluster implements Accountable {
 
     public int size() {
         return docIds == null ? 0 : docIds.length;
+    }
+
+    public void show() {
+        log.info("Show document cluster:");
+        log.info("Summary:");
+        summary.show();
+        log.info("DocIds: {}", Arrays.toString(docIds));
+        log.info("Freqs: {}", Arrays.toString(freqs));
+        log.info("End show document cluster");
     }
 
     public Iterator<DocFreq> iterator() {

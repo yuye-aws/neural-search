@@ -4,6 +4,7 @@
  */
 package org.opensearch.neuralsearch.sparse.algorithm;
 
+import org.apache.lucene.util.BytesRef;
 import org.opensearch.neuralsearch.sparse.common.DocFreq;
 
 import java.io.IOException;
@@ -31,7 +32,7 @@ public class PostingClustering {
         return PostingsProcessor.getTopK(postings, lambda);
     }
 
-    public List<DocumentCluster> cluster(List<DocFreq> postings) throws IOException {
+    public List<DocumentCluster> cluster(List<DocFreq> postings, BytesRef term) throws IOException {
         List<DocFreq> postingsCopy = new ArrayList<>(postings);
         List<DocFreq> preprocessed = preprocess(postingsCopy);
         if (preprocessed.isEmpty()) {
@@ -40,6 +41,6 @@ public class PostingClustering {
         if (preprocessed.size() < MINIMAL_DOC_SIZE_TO_CLUSTER) {
             return Collections.singletonList(new DocumentCluster(null, preprocessed, true));
         }
-        return clustering.cluster(preprocessed);
+        return clustering.cluster(preprocessed, term);
     }
 }

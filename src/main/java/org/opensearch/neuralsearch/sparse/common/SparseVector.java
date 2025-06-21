@@ -7,6 +7,7 @@ package org.opensearch.neuralsearch.sparse.common;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
@@ -17,6 +18,7 @@ import org.opensearch.neuralsearch.sparse.algorithm.ByteQuantizer;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -27,6 +29,7 @@ import java.util.stream.Collectors;
 /**
  * Sparse vector implementation, which is a list of (token, freq) pairs
  */
+@Log4j2
 @EqualsAndHashCode
 public class SparseVector implements Accountable {
     // tokens will be stored in order
@@ -35,6 +38,13 @@ public class SparseVector implements Accountable {
 
     public SparseVector(BytesRef bytesRef) throws IOException {
         this(readToMap(bytesRef));
+    }
+
+    public void show() {
+        log.info("Show sparse vector:");
+        log.info("Tokens: {}", Arrays.toString(tokens));
+        log.info("Freqs: {}", Arrays.toString(freqs));
+        log.info("End show sparse vector");
     }
 
     public int getSize() {

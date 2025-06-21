@@ -69,7 +69,7 @@ public class ClusteringTask implements Supplier<PostingClusters> {
     public PostingClusters get() {
         List<DocumentCluster> clusters = null;
         try {
-            clusters = postingClustering.cluster(this.docs);
+            clusters = postingClustering.cluster(this.docs, null);
         } catch (IOException e) {
             log.error("cluster failed", e);
             throw new RuntimeException(e);

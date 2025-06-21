@@ -16,7 +16,7 @@ import java.util.List;
  */
 @Getter
 public class PostingClusters implements Accountable {
-    private final List<DocumentCluster> clusters;
+    public final List<DocumentCluster> clusters;
     private final int size;
 
     public PostingClusters(List<DocumentCluster> clusters) {
@@ -33,7 +33,7 @@ public class PostingClusters implements Accountable {
     }
 
     public IteratorWrapper<DocumentCluster> iterator() {
-        return new IteratorWrapper<DocumentCluster>(this.clusters.iterator());
+        return new IteratorWrapper<>(this.clusters.iterator());
     }
 
     @Override

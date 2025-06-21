@@ -91,12 +91,16 @@ public class PostingWithClustersScorer extends Scorer {
                 log.error("posting enum is not SparsePostingsEnum, actual type: {}", postingsEnum.getClass().getName());
                 return;
             }
-            log.debug(
+            log.info(
                 "query token: {}, posting doc size: {}, cluster size: {}",
                 token,
                 sparsePostingsEnum.size(),
                 sparsePostingsEnum.getClusters().getClusters().size()
             );
+            List<DocumentCluster> clusters = sparsePostingsEnum.getClusters().getClusters();
+            for (DocumentCluster cluster : clusters) {
+                cluster.show();
+            }
             if (reader == null) {
                 SparseVectorForwardIndex index = InMemorySparseVectorForwardIndex.get(sparsePostingsEnum.getIndexKey());
                 if (index != null) {
@@ -115,6 +119,7 @@ public class PostingWithClustersScorer extends Scorer {
             scoreHeap.add(pair);
             if (scoreHeap.size() > sparseQueryContext.getK()) {
                 scoreHeap.poll();
+                assert scoreHeap.peek() != null;
                 heapThreshold = scoreHeap.peek().getRight();
             }
         }
@@ -173,6 +178,8 @@ public class PostingWithClustersScorer extends Scorer {
                     }
                     Profiling.INSTANCE.end(Profiling.ItemId.READ, start);
                     start = Profiling.INSTANCE.begin(Profiling.ItemId.DP);
+                    log.info("Doc id: {}", docId);
+                    doc.show();
                     score = doc.dotProduct(queryDenseVector);
                     Profiling.INSTANCE.end(Profiling.ItemId.DP, start);
                     start = Profiling.INSTANCE.begin(Profiling.ItemId.HEAP);
