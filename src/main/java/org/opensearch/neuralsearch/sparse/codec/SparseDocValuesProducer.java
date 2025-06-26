@@ -57,8 +57,7 @@ public class SparseDocValuesProducer extends DocValuesProducer {
         InMemorySparseVectorForwardIndex forwardIndex = InMemorySparseVectorForwardIndex.get(key);
         if (forwardIndex == null) {
             log.info("Forward index is null. Need to load it from binary doc values");
-            SparseVectorForwardIndex.SparseVectorForwardIndexWriter writer = InMemorySparseVectorForwardIndex.getOrCreate(key, docCount)
-                .getForwardIndexWriter();
+            SparseVectorForwardIndex.SparseVectorWriter writer = InMemorySparseVectorForwardIndex.getOrCreate(key, docCount).getWriter();
             if (writer == null) {
                 throw new IllegalStateException("Forward index writer is null");
             }

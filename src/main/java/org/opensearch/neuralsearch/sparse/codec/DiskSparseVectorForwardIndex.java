@@ -9,6 +9,7 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.util.BytesRef;
 import org.opensearch.neuralsearch.sparse.common.SparseVector;
+import org.opensearch.neuralsearch.sparse.common.SparseVectorReader;
 
 import java.io.IOException;
 
@@ -20,6 +21,7 @@ public class DiskSparseVectorForwardIndex implements SparseVectorForwardIndex {
 
     private final LeafReader leafReader;
     private final String fieldName;
+    private final SparseVectorReader reader = new DiskSparseVectorForwardIndexReader();
 
     public DiskSparseVectorForwardIndex(LeafReader leafReader, String fieldName) {
         this.leafReader = leafReader;
@@ -27,16 +29,16 @@ public class DiskSparseVectorForwardIndex implements SparseVectorForwardIndex {
     }
 
     @Override
-    public SparseVectorForwardIndexReader getForwardIndexReader() {
-        return new DiskSparseVectorForwardIndexReader();
+    public SparseVectorReader getReader() {
+        return reader;
     }
 
     @Override
-    public SparseVectorForwardIndexWriter getForwardIndexWriter() {
+    public SparseVectorWriter getWriter() {
         throw new UnsupportedOperationException("Writing to disk-based forward index is not supported directly");
     }
 
-    private class DiskSparseVectorForwardIndexReader implements SparseVectorForwardIndexReader {
+    private class DiskSparseVectorForwardIndexReader implements SparseVectorReader {
         private BinaryDocValues docValues;
 
         private DiskSparseVectorForwardIndexReader() {
@@ -49,7 +51,7 @@ public class DiskSparseVectorForwardIndex implements SparseVectorForwardIndex {
         }
 
         @Override
-        public SparseVector readSparseVector(int docId) {
+        public SparseVector read(int docId) {
             try {
                 if (docValues != null && docValues.advanceExact(docId)) {
                     BytesRef bytesRef = docValues.binaryValue();
@@ -57,18 +59,6 @@ public class DiskSparseVectorForwardIndex implements SparseVectorForwardIndex {
                 }
             } catch (IOException e) {
                 log.error("Failed to read sparse vector for docId {}", docId, e);
-            }
-            return null;
-        }
-
-        @Override
-        public BytesRef read(int docId) {
-            try {
-                if (docValues != null && docValues.advanceExact(docId)) {
-                    return docValues.binaryValue();
-                }
-            } catch (IOException e) {
-                log.error("Failed to read bytes for docId {}", docId, e);
             }
             return null;
         }
