@@ -32,7 +32,7 @@ public class SparseDocValuesReader extends EmptyDocValuesProducer {
     }
 
     @Override
-    public BinaryDocValues getBinary(FieldInfo field) {
+    public BinaryDocValues getBinary(FieldInfo field) throws IOException {
         long totalLiveDocs = 0;
         try {
             List<BinaryDocValuesSub> subs = new ArrayList<>(this.mergeState.docValuesProducers.length);

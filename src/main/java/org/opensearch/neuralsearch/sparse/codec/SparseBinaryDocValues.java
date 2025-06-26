@@ -66,7 +66,6 @@ public class SparseBinaryDocValues extends BinaryDocValues {
         return current.getValues().binaryValue();
     }
 
-    // read sparse vector from the cache during index merge
     public SparseVector cachedSparseVector() throws IOException {
         if (this.current == null) return null;
         InMemoryKey.IndexKey key = this.current.getKey();

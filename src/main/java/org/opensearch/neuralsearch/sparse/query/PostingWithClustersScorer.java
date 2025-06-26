@@ -84,7 +84,6 @@ public class PostingWithClustersScorer extends Scorer {
             if (!termsEnum.seekExact(term)) {
                 continue;
             }
-            BinaryDocValues docValues = leafReader.getBinaryDocValues(fieldName);
             PostingsEnum postingsEnum = termsEnum.postings(null, PostingsEnum.FREQS);
             if (!(postingsEnum instanceof SparsePostingsEnum sparsePostingsEnum)) {
                 log.error("posting enum is not SparsePostingsEnum, actual type: {}", postingsEnum.getClass().getName());
