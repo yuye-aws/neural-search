@@ -8,5 +8,5 @@ import java.io.IOException;
 
 @FunctionalInterface
 public interface SparseVectorReader {
-    SparseVector read(int docId) throws IOException;
+    SparseVector    read(int docId) throws IOException;
 }

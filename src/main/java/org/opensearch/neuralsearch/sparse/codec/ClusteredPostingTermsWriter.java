@@ -76,11 +76,10 @@ public class ClusteredPostingTermsWriter extends PushPostingsWriterBase {
         return state;
     }
 
-    public void setFieldAndMaxDoc(FieldInfo fieldInfo, int maxDoc) {
+    public void setFieldAndMaxDoc(FieldInfo fieldInfo) {
         super.setField(fieldInfo);
         key = new InMemoryKey.IndexKey(this.segmentInfo, fieldInfo);
-        SparseVectorForwardIndex index = InMemorySparseVectorForwardIndex.getOrCreate(key, maxDoc);
-        assert (index != null);
+        SparseVectorForwardIndex index = new DiskSparseVectorForwardIndex(fieldInfo.getName());
         float cluster_ratio = Float.parseFloat(fieldInfo.attributes().get(CLUSTER_RATIO_FIELD));
         int nPostings = Integer.parseInt(fieldInfo.attributes().get(N_POSTINGS_FIELD));
         float summaryPruneRatio = Float.parseFloat(fieldInfo.attributes().get(SUMMARY_PRUNE_RATIO_FIELD));

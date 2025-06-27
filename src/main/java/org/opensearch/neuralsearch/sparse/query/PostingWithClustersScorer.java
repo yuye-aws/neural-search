@@ -17,7 +17,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongBitSet;
 import org.opensearch.neuralsearch.sparse.algorithm.DocumentCluster;
-import org.opensearch.neuralsearch.sparse.codec.InMemorySparseVectorForwardIndex;
+import org.opensearch.neuralsearch.sparse.codec.DiskSparseVectorForwardIndex;
 import org.opensearch.neuralsearch.sparse.codec.SparsePostingsEnum;
 import org.opensearch.neuralsearch.sparse.codec.SparseVectorForwardIndex;
 import org.opensearch.neuralsearch.sparse.common.DocFreqIterator;
@@ -89,12 +89,8 @@ public class PostingWithClustersScorer extends Scorer {
                 return;
             }
             if (reader == null) {
-                SparseVectorForwardIndex index = InMemorySparseVectorForwardIndex.get(sparsePostingsEnum.getIndexKey());
-                if (index != null) {
-                    reader = index.getReader();
-                } else {
-                    reader = (docId) -> { return null; };
-                }
+                SparseVectorForwardIndex index = new DiskSparseVectorForwardIndex(leafReader, fieldName);
+                reader = index.getReader();
             }
             subScorers.add(new SingleScorer(sparsePostingsEnum, term));
         }
@@ -105,6 +101,7 @@ public class PostingWithClustersScorer extends Scorer {
             scoreHeap.add(pair);
             if (scoreHeap.size() > sparseQueryContext.getK()) {
                 scoreHeap.poll();
+                assert scoreHeap.peek() != null;
                 heapThreshold = scoreHeap.peek().getRight();
             }
         }

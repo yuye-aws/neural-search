@@ -9,15 +9,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.util.BytesRef;
-import org.opensearch.neuralsearch.sparse.codec.InMemoryClusteredPosting;
-import org.opensearch.neuralsearch.sparse.codec.InMemorySparseVectorForwardIndex;
 import org.opensearch.neuralsearch.sparse.codec.SparseBinaryDocValuesPassThrough;
 import org.opensearch.neuralsearch.sparse.codec.SparsePostingsReader;
 import org.opensearch.neuralsearch.sparse.common.DocFreq;
-import org.opensearch.neuralsearch.sparse.common.InMemoryKey;
-import org.opensearch.neuralsearch.sparse.common.SparseVector;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,7 +22,6 @@ import java.util.function.Supplier;
 @Log4j2
 public class BatchClusteringTask implements Supplier<List<Pair<BytesRef, PostingClusters>>> {
     private final List<BytesRef> terms;
-    private final InMemoryKey.IndexKey key;
     private final float summaryPruneRatio;
     private final float clusterRatio;
     private final int nPostings;
@@ -36,7 +30,6 @@ public class BatchClusteringTask implements Supplier<List<Pair<BytesRef, Posting
 
     public BatchClusteringTask(
         List<BytesRef> terms,
-        InMemoryKey.IndexKey key,
         float summaryPruneRatio,
         float clusterRatio,
         int nPostings,
@@ -44,7 +37,6 @@ public class BatchClusteringTask implements Supplier<List<Pair<BytesRef, Posting
         FieldInfo fieldInfo
     ) {
         this.terms = terms.stream().map(BytesRef::deepCopyOf).toList();
-        this.key = key;
         this.summaryPruneRatio = summaryPruneRatio;
         this.clusterRatio = clusterRatio;
         this.nPostings = nPostings;
@@ -79,42 +71,18 @@ public class BatchClusteringTask implements Supplier<List<Pair<BytesRef, Posting
                         if (!(binaryDocValues instanceof SparseBinaryDocValuesPassThrough sparseBinaryDocValues)) {
                             return null;
                         }
-                        SegmentInfo oldSegment = sparseBinaryDocValues.getSegmentInfo();
-                        SparseVector vector = readFromCacheOfOldSegment(oldSegment, oldId);
-                        if (vector != null) {
-                            return vector;
-                        }
-                        vector = readFromCacheOfMergedSegment(newDocId);
-                        if (vector != null) {
-                            return vector;
-                        }
                         // read from old segment's lucene
                         return sparseBinaryDocValues.read(oldId);
                     })
                 );
                 List<DocumentCluster> clusters = postingClustering.cluster(docFreqs);
                 postingClusters.add(Pair.of(term, new PostingClusters(clusters)));
-                InMemoryClusteredPosting.InMemoryClusteredPostingWriter.writePostingClusters(key, term, clusters);
             }
         } catch (IOException e) {
             log.error("cluster failed", e);
             throw new RuntimeException(e);
         }
         return postingClusters;
-    }
-
-    private SparseVector readFromCacheOfMergedSegment(int newDocId) throws IOException {
-        InMemorySparseVectorForwardIndex newIndex = InMemorySparseVectorForwardIndex.get(this.key);
-        return newIndex != null ? newIndex.getReader().read(newDocId) : null;
-    }
-
-    private SparseVector readFromCacheOfOldSegment(SegmentInfo oldSegment, int oldId) throws IOException {
-        InMemoryKey.IndexKey oldKey = new InMemoryKey.IndexKey(oldSegment, fieldInfo);
-        InMemorySparseVectorForwardIndex oldIndex = InMemorySparseVectorForwardIndex.get(oldKey);
-        if (oldIndex != null) {
-            return oldIndex.getReader().read(oldId);
-        }
-        return null;
     }
 
     private int getTotalDocs() {

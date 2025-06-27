@@ -25,7 +25,7 @@ public class SparseDocValuesFormat extends DocValuesFormat {
 
     @Override
     public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-        return new SparseDocValuesConsumer(state, delegate.fieldsConsumer(state));
+        return new SparseDocValuesConsumer(delegate.fieldsConsumer(state));
     }
 
     @Override

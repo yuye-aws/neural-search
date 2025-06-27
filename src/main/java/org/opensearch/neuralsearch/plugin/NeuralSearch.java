@@ -16,10 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import org.apache.lucene.util.Accountables;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.opensearch.common.util.concurrent.OpenSearchExecutors;
-import org.opensearch.index.IndexModule;
 import org.opensearch.index.IndexSettings;
 import org.opensearch.index.codec.CodecServiceFactory;
 import org.opensearch.index.mapper.Mapper;
@@ -30,13 +27,9 @@ import org.opensearch.neuralsearch.highlight.extractor.QueryTextExtractorRegistr
 import com.google.common.collect.ImmutableList;
 import org.opensearch.action.ActionRequest;
 import org.opensearch.neuralsearch.settings.NeuralSearchSettingsAccessor;
-import org.opensearch.neuralsearch.sparse.SparseIndexEventListener;
 import org.opensearch.neuralsearch.sparse.SparseSettings;
 import org.opensearch.neuralsearch.sparse.algorithm.ClusterTrainingRunning;
-import org.opensearch.neuralsearch.sparse.codec.InMemoryClusteredPosting;
-import org.opensearch.neuralsearch.sparse.codec.InMemorySparseVectorForwardIndex;
 import org.opensearch.neuralsearch.sparse.codec.SparseCodecService;
-import org.opensearch.neuralsearch.sparse.common.Profiling;
 import org.opensearch.neuralsearch.sparse.mapper.SparseTokensFieldMapper;
 import org.opensearch.neuralsearch.sparse.query.SparseAnnQueryBuilder;
 import org.opensearch.neuralsearch.stats.events.EventStatsManager;
@@ -345,27 +338,5 @@ public class NeuralSearch extends Plugin
     @Override
     public Map<String, Highlighter> getHighlighters() {
         return Collections.singletonMap(SemanticHighlighter.NAME, semanticHighlighter);
-    }
-
-    @Override
-    public void onIndexModule(IndexModule indexModule) {
-        if (SparseSettings.IS_SPARSE_INDEX_SETTING.get(indexModule.getSettings())) {
-            indexModule.addIndexEventListener(new SparseIndexEventListener());
-            indexModule.addSettingsUpdateConsumer(SparseSettings.SPARSE_MEMORY_SETTING, (v) -> {
-                // just to log in-memory data usage
-                InMemoryClusteredPosting inMemoryClusteredPosting = new InMemoryClusteredPosting();
-                log.info(
-                    "memory usage: forward index {}, posting: {}",
-                    RamUsageEstimator.humanReadableUnits(InMemorySparseVectorForwardIndex.memUsage()),
-                    Accountables.toString(inMemoryClusteredPosting)
-                );
-
-                if (v) {
-                    Profiling.INSTANCE.run();
-                } else {
-                    Profiling.INSTANCE.output();
-                }
-            });
-        }
     }
 }

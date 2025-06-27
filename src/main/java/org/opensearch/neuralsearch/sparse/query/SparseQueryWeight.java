@@ -23,7 +23,7 @@ import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.opensearch.neuralsearch.sparse.algorithm.ByteQuantizer;
-import org.opensearch.neuralsearch.sparse.codec.InMemorySparseVectorForwardIndex;
+import org.opensearch.neuralsearch.sparse.codec.DiskSparseVectorForwardIndex;
 import org.opensearch.neuralsearch.sparse.codec.SparseVectorForwardIndex;
 import org.opensearch.neuralsearch.sparse.common.InMemoryKey;
 import org.opensearch.neuralsearch.sparse.common.PredicateUtils;
@@ -78,8 +78,8 @@ public class SparseQueryWeight extends Weight {
         SparseVectorReader sparseReader = null;
         if (info != null) {
             InMemoryKey.IndexKey key = new InMemoryKey.IndexKey(info, fieldType);
-            SparseVectorForwardIndex index = InMemorySparseVectorForwardIndex.get(key);
-            sparseReader = index != null ? index.getReader() : (docId -> { return null; });
+            SparseVectorForwardIndex index = new DiskSparseVectorForwardIndex(context.reader(), fieldInfo.getName());
+            sparseReader = index.getReader();
         }
         final Scorer scorer = new PostingWithClustersScorer(
             query.getFieldName(),

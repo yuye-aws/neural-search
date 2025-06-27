@@ -85,7 +85,7 @@ public class SparsePostingsReader {
             // get all terms of old segments from InMemoryClusteredPosting
             Set<BytesRef> allTerms = getAllTerms(fieldInfo);
             sparseTermsLuceneWriter.writeTermsSize(allTerms.size());
-            clusteredPostingTermsWriter.setFieldAndMaxDoc(fieldInfo, docCount);
+            clusteredPostingTermsWriter.setFieldAndMaxDoc(fieldInfo);
 
             List<CompletableFuture<List<Pair<BytesRef, PostingClusters>>>> futures = new ArrayList<>(
                 Math.round((float) allTerms.size() / BATCH_SIZE)
@@ -98,14 +98,14 @@ public class SparsePostingsReader {
                     if (clusterRatio == 0) {
                         futures.add(
                             CompletableFuture.completedFuture(
-                                new BatchClusteringTask(termBatch, key, summaryPruneRatio, clusterRatio, nPostings, mergeState, fieldInfo)
+                                new BatchClusteringTask(termBatch, summaryPruneRatio, clusterRatio, nPostings, mergeState, fieldInfo)
                                     .get()
                             )
                         );
                     } else {
                         futures.add(
                             CompletableFuture.supplyAsync(
-                                new BatchClusteringTask(termBatch, key, summaryPruneRatio, clusterRatio, nPostings, mergeState, fieldInfo),
+                                new BatchClusteringTask(termBatch, summaryPruneRatio, clusterRatio, nPostings, mergeState, fieldInfo),
                                 ClusterTrainingRunning.getInstance().getExecutor()
                             )
                         );
@@ -180,7 +180,6 @@ public class SparsePostingsReader {
                 log.error("binaryDocValues is not SparseBinaryDocValuesPassThrough, {}", binaryDocValues.getClass().getName());
                 continue;
             }
-            SparseBinaryDocValuesPassThrough sparseBinaryDocValues = (SparseBinaryDocValuesPassThrough) binaryDocValues;
             Terms terms = fieldsProducer.terms(fieldInfo.name);
             if (terms == null) {
                 log.error("terms is null");
