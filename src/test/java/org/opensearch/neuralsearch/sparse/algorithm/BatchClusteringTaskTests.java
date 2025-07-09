@@ -60,7 +60,7 @@ public class BatchClusteringTaskTests extends AbstractSparseTestBase {
         key = new InMemoryKey.IndexKey(null, "test_field");
     }
 
-    private FieldInfo prepareKeyFieldInfo() {
+    public FieldInfo prepareKeyFieldInfo() {
 
         // Create a FieldInfo object
         FieldInfo keyFieldInfo = new FieldInfo(
