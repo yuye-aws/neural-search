@@ -22,6 +22,8 @@ import java.util.Map;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.any;
 import static org.opensearch.neuralsearch.sparse.common.SparseConstants.NAME_FIELD;
 import static org.opensearch.neuralsearch.sparse.common.SparseConstants.PARAMETERS_FIELD;
 
@@ -108,7 +110,7 @@ public class MethodComponentContextTests extends AbstractSparseTestBase {
         input.put("parameters", new HashMap<>());
 
         MapperParsingException exception = expectThrows(MapperParsingException.class, () -> { MethodComponentContext.parse(input); });
-        assertNotNull(exception);
+        assertEquals("name needs to be set", exception.getMessage());
     }
 
     public void testParseWithInvalidKey() {
@@ -117,37 +119,48 @@ public class MethodComponentContextTests extends AbstractSparseTestBase {
         input.put("invalidKey", "value");
 
         MapperParsingException exception = expectThrows(MapperParsingException.class, () -> { MethodComponentContext.parse(input); });
-        assertNotNull(exception);
+        assertEquals("Invalid parameter for MethodComponentContext: invalidKey", exception.getMessage());
+    }
+
+    public void testParseNullParameters() {
+        Map<String, Object> input = new HashMap<>();
+        input.put(NAME_FIELD, "test_method");
+        input.put(PARAMETERS_FIELD, null);
+
+        MethodComponentContext result = MethodComponentContext.parse(input);
+
+        assertEquals("test_method", result.getName());
+        assertTrue(result.getParameters().isEmpty());
     }
 
     public void testParseWithNestedParameters() {
         Map<String, Object> input = new HashMap<>();
-        input.put(NAME_FIELD, "testMethod");
+        input.put(NAME_FIELD, "test_method");
 
         Map<String, Object> parameters = new HashMap<>();
-        parameters.put("param1", null);
+        parameters.put("param1", "value1");
 
         Map<String, Object> nestedParam = new HashMap<>();
-        nestedParam.put(NAME_FIELD, "nestedMethod");
-        nestedParam.put(PARAMETERS_FIELD, null);
+        nestedParam.put(NAME_FIELD, "nested_method");
+        nestedParam.put(PARAMETERS_FIELD, new HashMap<>());
         parameters.put("param2", nestedParam);
 
         input.put(PARAMETERS_FIELD, parameters);
 
         MethodComponentContext result = MethodComponentContext.parse(input);
 
-        assertEquals("testMethod", result.getName());
-        assertEquals(null, result.getParameters().get("param1"));
+        assertEquals("test_method", result.getName());
+        assertEquals("value1", result.getParameters().get("param1"));
         assertTrue(result.getParameters().get("param2") instanceof MethodComponentContext);
 
         MethodComponentContext nestedResult = (MethodComponentContext) result.getParameters().get("param2");
-        assertEquals("nestedMethod", nestedResult.getName());
-        assertEquals(null, nestedResult.getParameters());
+        assertEquals("nested_method", nestedResult.getName());
+        assertTrue(nestedResult.getParameters().isEmpty());
     }
 
     public void testParseWithNonMapInput() {
         MapperParsingException exception = expectThrows(MapperParsingException.class, () -> { MethodComponentContext.parse("Not a Map"); });
-        assertNotNull(exception);
+        assertEquals("Unable to parse MethodComponent", exception.getMessage());
     }
 
     public void testParseWithNonMapParameters() {
@@ -156,7 +169,7 @@ public class MethodComponentContextTests extends AbstractSparseTestBase {
         input.put("parameters", "Not a Map");
 
         MapperParsingException exception = expectThrows(MapperParsingException.class, () -> { MethodComponentContext.parse(input); });
-        assertNotNull(exception);
+        assertEquals("Unable to parse parameters for method component", exception.getMessage());
     }
 
     public void testParseWithNonStringName() {
@@ -165,49 +178,68 @@ public class MethodComponentContextTests extends AbstractSparseTestBase {
         input.put("parameters", new HashMap<>());
 
         MapperParsingException exception = expectThrows(MapperParsingException.class, () -> { MethodComponentContext.parse(input); });
-        assertNotNull(exception);
-    }
-
-    public void testReadNonMethodComponentContextValue() throws IOException {
-        StreamInput mockInput = mock(StreamInput.class);
-        when(mockInput.readBoolean()).thenReturn(false);
-        when(mockInput.readGenericValue()).thenReturn("test-value");
-
-        // Test is removed due to private access - functionality is tested through public methods
-        assertNotNull(mockInput);
+        assertEquals("Component name should be a string", exception.getMessage());
     }
 
     public void testToXContentWithNestedMethodComponentContext() throws IOException {
         String name = "parentMethod";
         Map<String, Object> nestedParams = new HashMap<>();
         nestedParams.put("nestedParam", "nestedValue");
-        MethodComponentContext nestedContext = new MethodComponentContext("nestedMethod", nestedParams);
+        MethodComponentContext nestedContext = new MethodComponentContext("nested_method", nestedParams);
 
         Map<String, Object> params = new HashMap<>();
         params.put("nestedContext", nestedContext);
         MethodComponentContext context = new MethodComponentContext(name, params);
 
         XContentBuilder builder = XContentFactory.jsonBuilder();
+        builder.startObject();
         context.toXContent(builder, null);
+        builder.endObject();
 
         String expected =
-            "{\"name\":\"parentMethod\",\"parameters\":{\"nestedContext\":{\"name\":\"nestedMethod\",\"parameters\":{\"nestedParam\":\"nestedValue\"}}}}";
+            "{\"name\":\"parentMethod\",\"parameters\":{\"nestedContext\":{\"name\":\"nested_method\",\"parameters\":{\"nestedParam\":\"nestedValue\"}}}}";
         assertEquals(expected, builder.toString());
     }
 
     public void testToXContentWithNullParameters() throws IOException {
-        String name = "testMethod";
+        String name = "test_method";
         MethodComponentContext context = new MethodComponentContext(name, null);
 
         XContentBuilder builder = XContentFactory.jsonBuilder();
+        builder.startObject();
         context.toXContent(builder, null);
+        builder.endObject();
 
-        String expected = "{\"name\":\"testMethod\",\"parameters\":null}";
+        String expected = "{\"name\":\"test_method\",\"parameters\":null}";
         assertEquals(expected, builder.toString());
     }
 
+    public void testToXContentWithIOExceptionHandling() throws IOException {
+        // Create a MethodComponentContext with a parameter that will cause an IOException
+        String name = "errorMethod";
+        Map<String, Object> params = new HashMap<>();
+
+        // Create a mock MethodComponentContext that throws IOException when toXContent is called
+        MethodComponentContext problematicNestedContext = mock(MethodComponentContext.class);
+        doThrow(new IOException("Test IOException")).when(problematicNestedContext).toXContent(any(), any());
+
+        params.put("problematicContext", problematicNestedContext);
+        MethodComponentContext context = new MethodComponentContext(name, params);
+
+        XContentBuilder builder = XContentFactory.jsonBuilder();
+        builder.startObject();
+
+        // The toXContent method should throw a RuntimeException wrapping the IOException
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> context.toXContent(builder, null));
+
+        // Verify the exception message
+        assertEquals("Unable to generate xcontent for method component", exception.getMessage());
+
+        builder.endObject();
+    }
+
     public void testCopyConstructorWithNonMethodComponentContextParameters() {
-        String name = "testMethod";
+        String name = "test_method";
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("param1", "value1");
         parameters.put("param2", 42);
@@ -248,7 +280,7 @@ public class MethodComponentContextTests extends AbstractSparseTestBase {
     }
 
     public void testEqualsIdenticalObjects() {
-        String name = "testMethod";
+        String name = "test_method";
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("param1", "value1");
         parameters.put("param2", 42);
@@ -261,13 +293,13 @@ public class MethodComponentContextTests extends AbstractSparseTestBase {
     }
 
     public void testFromXContentWithValidInput() throws IOException {
-        String json = "{\"name\":\"testMethod\",\"parameters\":{\"param1\":\"value1\"}}";
+        String json = "{\"name\":\"test_method\",\"parameters\":{\"param1\":\"value1\"}}";
         XContentParser parser = JsonXContent.jsonXContent.createParser(null, null, json);
 
         MethodComponentContext result = MethodComponentContext.fromXContent(parser);
 
         assertNotNull(result);
-        assertEquals("testMethod", result.getName());
+        assertEquals("test_method", result.getName());
         assertTrue(result.getParameters().containsKey("param1"));
         assertEquals("value1", result.getParameters().get("param1"));
     }
@@ -323,7 +355,7 @@ public class MethodComponentContextTests extends AbstractSparseTestBase {
     }
 
     public void testWriteToAndReadFrom() throws IOException {
-        String name = "testMethod";
+        String name = "test_method";
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("param1", "value1");
         parameters.put("param2", 42);
@@ -342,7 +374,7 @@ public class MethodComponentContextTests extends AbstractSparseTestBase {
     }
 
     public void testWriteToWithNullParameters() throws IOException {
-        String name = "testMethod";
+        String name = "test_method";
         MethodComponentContext context = new MethodComponentContext(name, null);
 
         BytesStreamOutput out = new BytesStreamOutput();
@@ -352,5 +384,35 @@ public class MethodComponentContextTests extends AbstractSparseTestBase {
         String writtenName = in.readString();
         assertEquals(name, writtenName);
         assertEquals(0, in.available());
+    }
+
+    public void testParameterMapValueReaderWithMethodComponentContext() throws IOException {
+        Map<String, Object> nestedParams = new HashMap<>();
+        nestedParams.put("key", "value");
+        MethodComponentContext nestedContext = new MethodComponentContext("nested", nestedParams);
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("nested_context", nestedContext);
+        MethodComponentContext context = new MethodComponentContext("test", params);
+
+        BytesStreamOutput out = new BytesStreamOutput();
+        context.writeTo(out);
+
+        StreamInput in = out.bytes().streamInput();
+        MethodComponentContext readContext = new MethodComponentContext(in);
+
+        assertTrue(readContext.getParameters().get("nested_context") instanceof MethodComponentContext);
+    }
+
+    public void testParameterMapValueWriterWithMethodComponentContext() throws IOException {
+        MethodComponentContext nestedContext = new MethodComponentContext("nested", new HashMap<>());
+        Map<String, Object> params = new HashMap<>();
+        params.put("nested_context", nestedContext);
+        MethodComponentContext context = new MethodComponentContext("test", params);
+
+        BytesStreamOutput out = new BytesStreamOutput();
+        context.writeTo(out);
+
+        assertTrue(out.bytes().length() > 0);
     }
 }
