@@ -46,9 +46,9 @@ import java.lang.reflect.Field;
 
 public class BatchClusteringTaskTests extends AbstractSparseTestBase {
     @VisibleForTesting
-    private List<BytesRef> terms;
-    private InMemoryKey.IndexKey key;
-    private String fieldName = "test_field";
+    private static List<BytesRef> terms;
+    private static InMemoryKey.IndexKey key;
+    private static String fieldName = "test_field";
 
     @Before
     @Override
@@ -60,7 +60,7 @@ public class BatchClusteringTaskTests extends AbstractSparseTestBase {
         key = new InMemoryKey.IndexKey(null, "test_field");
     }
 
-    public FieldInfo prepareKeyFieldInfo() {
+    public static FieldInfo prepareKeyFieldInfo() {
 
         // Create a FieldInfo object
         FieldInfo keyFieldInfo = new FieldInfo(
@@ -86,7 +86,7 @@ public class BatchClusteringTaskTests extends AbstractSparseTestBase {
         return keyFieldInfo;
     }
 
-    private SegmentInfo prepareSegmentInfo() {
+    public static SegmentInfo prepareSegmentInfo() {
         MergeState.DocMap[] docMaps = new MergeState.DocMap[1];
         docMaps[0] = docID -> docID;
         Directory dir = new ByteBuffersDirectory();
@@ -112,7 +112,7 @@ public class BatchClusteringTaskTests extends AbstractSparseTestBase {
         return segmentInfo;
     }
 
-    private BinaryDocValues prepareBinaryDocValues() {
+    public static BinaryDocValues prepareBinaryDocValues() {
         final BytesRef value = new BytesRef(new byte[] { 1, 2, 3, 4 });
         BinaryDocValues binaryDocValues = new BinaryDocValues() {
             private int docID = -1;
@@ -162,7 +162,7 @@ public class BatchClusteringTaskTests extends AbstractSparseTestBase {
         return binaryDocValues;
     }
 
-    private DocValuesProducer prepareDocValuesProducer(BinaryDocValues binaryDocValues) {
+    public static DocValuesProducer prepareDocValuesProducer(BinaryDocValues binaryDocValues) {
         DocValuesProducer docValuesProducer = new DocValuesProducer() {
             @Override
             public NumericDocValues getNumeric(FieldInfo field) {
@@ -206,7 +206,7 @@ public class BatchClusteringTaskTests extends AbstractSparseTestBase {
         return docValuesProducer;
     }
 
-    private FieldsProducer prepareFieldsProducer() {
+    public static FieldsProducer prepareFieldsProducer() {
         FieldsProducer fieldsProducer = new FieldsProducer() {
             @Override
             public Iterator<String> iterator() {
@@ -232,7 +232,7 @@ public class BatchClusteringTaskTests extends AbstractSparseTestBase {
         return fieldsProducer;
     }
 
-    private MergeState prepareMergeState(boolean isEmptyMaxDocs) {
+    public static MergeState prepareMergeState(boolean isEmptyMaxDocs) {
         MergeState.DocMap[] docMaps = new MergeState.DocMap[1];
         docMaps[0] = docID -> docID;
         SegmentInfo segmentInfo = prepareSegmentInfo();

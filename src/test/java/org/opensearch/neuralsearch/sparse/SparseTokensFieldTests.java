@@ -38,7 +38,7 @@ public class SparseTokensFieldTests extends AbstractSparseTestBase {
         mockType = prepareMockIndexableFieldType();
     }
 
-    public IndexableFieldType prepareMockIndexableFieldType() {
+    public static IndexableFieldType prepareMockIndexableFieldType() {
         return new IndexableFieldType() {
             @Override
             public boolean stored() {
@@ -142,8 +142,7 @@ public class SparseTokensFieldTests extends AbstractSparseTestBase {
     }
 
     public void testIsSparseFieldWhenFieldContainsSparseAttribute() throws Exception {
-        BatchClusteringTaskTests batchTests = new BatchClusteringTaskTests();
-        FieldInfo mockField = batchTests.prepareKeyFieldInfo();
+        FieldInfo mockField = BatchClusteringTaskTests.prepareKeyFieldInfo();
         Map<String, String> attributes = new HashMap<>();
         attributes.put(SPARSE_FIELD, "true");
 
