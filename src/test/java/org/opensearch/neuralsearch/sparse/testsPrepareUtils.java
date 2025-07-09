@@ -41,7 +41,7 @@ public class testsPrepareUtils {
 
     private static String fieldName = "test_field";
 
-    public static FieldInfo prepareKeyFieldInfo(String fieldName) {
+    public static FieldInfo prepareKeyFieldInfo() {
 
         // Create a FieldInfo object
         FieldInfo keyFieldInfo = new FieldInfo(
@@ -224,7 +224,7 @@ public class testsPrepareUtils {
         }
 
         // Create a FieldInfo object
-        FieldInfo keyFieldInfo = prepareKeyFieldInfo(fieldName);
+        FieldInfo keyFieldInfo = prepareKeyFieldInfo();
 
         // Create a real BinaryDocValues object
         BinaryDocValues binaryDocValues = prepareBinaryDocValues();

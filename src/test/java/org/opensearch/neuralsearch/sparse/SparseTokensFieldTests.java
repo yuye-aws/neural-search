@@ -46,7 +46,7 @@ public class SparseTokensFieldTests extends AbstractSparseTestBase {
     }
 
     public void testIsSparseFieldWhenFieldContainsSparseAttribute() throws Exception {
-        FieldInfo mockField = testsPrepareUtils.prepareKeyFieldInfo("testField");
+        FieldInfo mockField = testsPrepareUtils.prepareKeyFieldInfo();
         Map<String, String> attributes = new HashMap<>();
         attributes.put(SPARSE_FIELD, "true");
 

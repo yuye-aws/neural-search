@@ -21,7 +21,7 @@ import java.lang.reflect.Field;
 public class BatchClusteringTaskTests extends AbstractSparseTestBase {
     private List<BytesRef> terms;
     private InMemoryKey.IndexKey key;
-    private static String fieldName = "test_field";
+    // private static String fieldName = "test_field";
 
     @Before
     @Override
@@ -92,7 +92,7 @@ public class BatchClusteringTaskTests extends AbstractSparseTestBase {
         // Test behavior with a not null merge state
         boolean isEmptyMaxDocs = false;
         MergeState mergeState = testsPrepareUtils.prepareMergeState(isEmptyMaxDocs);
-        FieldInfo keyFieldInfo = testsPrepareUtils.prepareKeyFieldInfo(fieldName);
+        FieldInfo keyFieldInfo = testsPrepareUtils.prepareKeyFieldInfo();
 
         // Create BatchClusteringTask
         BatchClusteringTask task = new BatchClusteringTask(terms, key, 0.5f, 0.3f, 10, mergeState, keyFieldInfo);
@@ -126,7 +126,7 @@ public class BatchClusteringTaskTests extends AbstractSparseTestBase {
         // Test behavior with a not null merge state
         boolean isEmptyMaxDocs = true;
         MergeState mergeState = testsPrepareUtils.prepareMergeState(isEmptyMaxDocs);
-        FieldInfo keyFieldInfo = testsPrepareUtils.prepareKeyFieldInfo(fieldName);
+        FieldInfo keyFieldInfo = testsPrepareUtils.prepareKeyFieldInfo();
 
         // Create BatchClusteringTask
         BatchClusteringTask task = new BatchClusteringTask(terms, key, 0.5f, 0.3f, 10, mergeState, keyFieldInfo);
