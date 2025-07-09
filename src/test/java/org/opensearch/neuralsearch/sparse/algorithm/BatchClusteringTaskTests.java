@@ -12,12 +12,11 @@ import org.junit.Before;
 import org.mockito.MockitoAnnotations;
 import org.opensearch.neuralsearch.sparse.AbstractSparseTestBase;
 import org.opensearch.neuralsearch.sparse.common.InMemoryKey;
+import org.opensearch.neuralsearch.sparse.testsPrepareUtils;
 
 import java.util.Arrays;
 import java.util.List;
 import java.lang.reflect.Field;
-
-import org.opensearch.neuralsearch.testsPrepareUtils;
 
 public class BatchClusteringTaskTests extends AbstractSparseTestBase {
     private List<BytesRef> terms;

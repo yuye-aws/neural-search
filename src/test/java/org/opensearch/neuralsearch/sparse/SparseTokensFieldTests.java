@@ -13,8 +13,6 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.opensearch.neuralsearch.testsPrepareUtils;
-
 import static org.opensearch.neuralsearch.sparse.SparseTokensField.SPARSE_FIELD;
 
 public class SparseTokensFieldTests extends AbstractSparseTestBase {
