@@ -12,6 +12,13 @@ import org.opensearch.neuralsearch.sparse.AbstractSparseTestBase;
 
 public class IteratorWrapperTests extends AbstractSparseTestBase {
 
+    private void assertIteratorResults(IteratorWrapper<Integer> wrapper, Integer... expected) {
+        for (Integer expectedValue : expected) {
+            assertEquals(expectedValue, wrapper.next());
+            assertEquals(expectedValue, wrapper.getCurrent());
+        }
+    }
+
     public void testIteratorWrapperWithNullIterator() {
         IteratorWrapper<String> wrapper = new IteratorWrapper<>(null);
         expectThrows(NullPointerException.class, wrapper::hasNext);
@@ -21,10 +28,7 @@ public class IteratorWrapperTests extends AbstractSparseTestBase {
         Iterator<Integer> iterator = Arrays.asList(1, 2, 3).iterator();
         IteratorWrapper<Integer> wrapper = new IteratorWrapper<>(iterator);
 
-        Integer result = wrapper.next();
-
-        assertEquals(Integer.valueOf(1), result);
-        assertEquals(Integer.valueOf(1), wrapper.getCurrent());
+        assertIteratorResults(wrapper, 1, 2, 3);
     }
 
     public void testNextWhenNoMoreElements() {
@@ -47,13 +51,6 @@ public class IteratorWrapperTests extends AbstractSparseTestBase {
 
         assertNotNull(wrapper);
         assertNull(wrapper.getCurrent());
-        assertTrue(wrapper.hasNext());
-    }
-
-    public void testHasNextReturnsTrueWhenUnderlyingIteratorHasMoreElements() {
-        Iterator<Integer> mockIterator = Arrays.asList(1, 2, 3).iterator();
-        IteratorWrapper<Integer> wrapper = new IteratorWrapper<>(mockIterator);
-
         assertTrue(wrapper.hasNext());
     }
 
