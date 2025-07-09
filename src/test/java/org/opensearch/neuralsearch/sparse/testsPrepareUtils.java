@@ -39,9 +39,9 @@ import java.util.concurrent.Executors;
 
 public class testsPrepareUtils {
 
-    private static String fieldName = "test_field";
+    private final String fieldName = "test_field";
 
-    public static FieldInfo prepareKeyFieldInfo() {
+    public FieldInfo prepareKeyFieldInfo() {
 
         // Create a FieldInfo object
         FieldInfo keyFieldInfo = new FieldInfo(
@@ -143,7 +143,7 @@ public class testsPrepareUtils {
         return binaryDocValues;
     }
 
-    public static DocValuesProducer prepareDocValuesProducer(BinaryDocValues binaryDocValues) {
+    public DocValuesProducer prepareDocValuesProducer(BinaryDocValues binaryDocValues) {
         DocValuesProducer docValuesProducer = new DocValuesProducer() {
             @Override
             public NumericDocValues getNumeric(FieldInfo field) {
@@ -187,7 +187,7 @@ public class testsPrepareUtils {
         return docValuesProducer;
     }
 
-    public static FieldsProducer prepareFieldsProducer() {
+    public FieldsProducer prepareFieldsProducer() {
         FieldsProducer fieldsProducer = new FieldsProducer() {
             @Override
             public Iterator<String> iterator() {
@@ -213,7 +213,7 @@ public class testsPrepareUtils {
         return fieldsProducer;
     }
 
-    public static MergeState prepareMergeState(boolean isEmptyMaxDocs) {
+    public MergeState prepareMergeState(boolean isEmptyMaxDocs) {
         MergeState.DocMap[] docMaps = new MergeState.DocMap[1];
         docMaps[0] = docID -> docID;
         SegmentInfo segmentInfo = prepareSegmentInfo();

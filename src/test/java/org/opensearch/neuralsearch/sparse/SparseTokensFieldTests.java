@@ -6,8 +6,6 @@ package org.opensearch.neuralsearch.sparse;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexableFieldType;
-import org.junit.Before;
-import org.mockito.MockitoAnnotations;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -17,19 +15,9 @@ import static org.opensearch.neuralsearch.sparse.SparseTokensField.SPARSE_FIELD;
 
 public class SparseTokensFieldTests extends AbstractSparseTestBase {
 
-    private String fieldName;
-    private byte[] testValue;
-    private IndexableFieldType mockType;
-
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-        MockitoAnnotations.openMocks(this);
-
-        fieldName = "testField";
-        testValue = new byte[] { 1, 2, 3 };
-        mockType = testsPrepareUtils.prepareMockIndexableFieldType();
-    }
+    private final String fieldName = "testField";
+    private final byte[] testValue = new byte[] { 1, 2, 3 };
+    private final IndexableFieldType mockType = testsPrepareUtils.prepareMockIndexableFieldType();
 
     public void testSparseTokensFieldConstructor() {
         SparseTokensField field = new SparseTokensField(fieldName, testValue, mockType);
@@ -46,7 +34,8 @@ public class SparseTokensFieldTests extends AbstractSparseTestBase {
     }
 
     public void testIsSparseFieldWhenFieldContainsSparseAttribute() throws Exception {
-        FieldInfo mockField = testsPrepareUtils.prepareKeyFieldInfo();
+        testsPrepareUtils prepareHelper = new testsPrepareUtils();
+        FieldInfo mockField = prepareHelper.prepareKeyFieldInfo();
         Map<String, String> attributes = new HashMap<>();
         attributes.put(SPARSE_FIELD, "true");
 
