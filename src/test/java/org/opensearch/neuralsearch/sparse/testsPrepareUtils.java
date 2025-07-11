@@ -29,6 +29,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.Version;
+import org.opensearch.common.settings.Settings;
+import org.opensearch.index.mapper.ContentPath;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -355,5 +357,13 @@ public class testsPrepareUtils {
                 return VectorSimilarityFunction.EUCLIDEAN;
             }
         };
+    }
+
+    public static Settings prepareIndexSettings() {
+        return Settings.builder().put("index.number_of_shards", 1).put("index.number_of_replicas", 0).build();
+    }
+
+    public static ContentPath prepareContentPath() {
+        return new ContentPath();
     }
 }
