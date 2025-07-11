@@ -42,11 +42,10 @@ public class SparseTokensFieldTypeTests extends AbstractSparseTestBase {
         methodMap.put(NAME_FIELD, SEISMIC);
         methodMap.put(PARAMETERS_FIELD, parameters);
         sparseMethodContext = SparseMethodContext.parse(methodMap);
-
-        fieldType = new SparseTokensFieldType("test_field", sparseMethodContext, false, true);
     }
 
     public void testConstructor_withValidParameters_createsFieldType() {
+        fieldType = new SparseTokensFieldType("test_field", sparseMethodContext, false, true);
         assertNotNull(fieldType);
         assertEquals("test_field", fieldType.name());
         assertEquals(sparseMethodContext, fieldType.getSparseMethodContext());
@@ -62,10 +61,12 @@ public class SparseTokensFieldTypeTests extends AbstractSparseTestBase {
     }
 
     public void testTypeName_returnsCorrectType() {
+        fieldType = new SparseTokensFieldType("test_field", sparseMethodContext, false, true);
         assertEquals("sparse_tokens", fieldType.typeName());
     }
 
     public void testValueFetcher_withNullFormat_returnsSourceValueFetcher() {
+        fieldType = new SparseTokensFieldType("test_field", sparseMethodContext, false, true);
         QueryShardContext context = mock(QueryShardContext.class);
         SearchLookup searchLookup = mock(SearchLookup.class);
 
@@ -73,6 +74,7 @@ public class SparseTokensFieldTypeTests extends AbstractSparseTestBase {
     }
 
     public void testValueFetcher_withFormat_throwsException() {
+        fieldType = new SparseTokensFieldType("test_field", sparseMethodContext, false, true);
         QueryShardContext context = mock(QueryShardContext.class);
         SearchLookup searchLookup = mock(SearchLookup.class);
 
@@ -83,6 +85,7 @@ public class SparseTokensFieldTypeTests extends AbstractSparseTestBase {
     }
 
     public void testTermQuery_throwsIllegalArgumentException() {
+        fieldType = new SparseTokensFieldType("test_field", sparseMethodContext, false, true);
         QueryShardContext context = mock(QueryShardContext.class);
 
         IllegalArgumentException exception = expectThrows(
@@ -93,6 +96,7 @@ public class SparseTokensFieldTypeTests extends AbstractSparseTestBase {
     }
 
     public void testExistsQuery_throwsIllegalArgumentException() {
+        fieldType = new SparseTokensFieldType("test_field", sparseMethodContext, false, true);
         QueryShardContext context = mock(QueryShardContext.class);
 
         IllegalArgumentException exception = expectThrows(IllegalArgumentException.class, () -> { fieldType.existsQuery(context); });
@@ -100,6 +104,7 @@ public class SparseTokensFieldTypeTests extends AbstractSparseTestBase {
     }
 
     public void testFielddataBuilder_throwsIllegalArgumentException() {
+        fieldType = new SparseTokensFieldType("test_field", sparseMethodContext, false, true);
         IllegalArgumentException exception = expectThrows(IllegalArgumentException.class, () -> {
             fieldType.fielddataBuilder("test_index", () -> mock(SearchLookup.class));
         });
@@ -107,6 +112,7 @@ public class SparseTokensFieldTypeTests extends AbstractSparseTestBase {
     }
 
     public void testGetters_returnCorrectValues() {
+        fieldType = new SparseTokensFieldType("test_field", sparseMethodContext, false, true);
         assertEquals(sparseMethodContext, fieldType.getSparseMethodContext());
         assertFalse(fieldType.isStored());
         assertTrue(fieldType.isHasDocValues());
@@ -123,6 +129,7 @@ public class SparseTokensFieldTypeTests extends AbstractSparseTestBase {
     }
 
     public void testTermQuery_withDifferentValueTypes_throwsException() {
+        fieldType = new SparseTokensFieldType("test_field", sparseMethodContext, false, true);
         QueryShardContext context = mock(QueryShardContext.class);
 
         // Test with different value types
@@ -142,11 +149,13 @@ public class SparseTokensFieldTypeTests extends AbstractSparseTestBase {
     }
 
     public void testFieldTypeInheritance_extendsCorrectClass() {
+        fieldType = new SparseTokensFieldType("test_field", sparseMethodContext, false, true);
         assertTrue(fieldType instanceof org.opensearch.index.mapper.MappedFieldType);
     }
 
     public void testFieldTypeProperties_inheritedFromParent() {
         // Test inherited properties from MappedFieldType
+        fieldType = new SparseTokensFieldType("test_field", sparseMethodContext, false, true);
         assertEquals("test_field", fieldType.name());
         assertFalse(fieldType.isSearchable()); // Set to false in constructor
         assertFalse(fieldType.isStored()); // Our stored parameter
