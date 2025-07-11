@@ -9,6 +9,7 @@ import org.opensearch.neuralsearch.sparse.codec.InMemoryClusteredPosting;
 import org.opensearch.neuralsearch.sparse.codec.InMemorySparseVectorForwardIndex;
 
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Memory stat information class which gets memory stat data
@@ -16,7 +17,7 @@ import java.util.Locale;
 public class MemoryStat implements MetricStat {
 
     private final MetricStatName statName;
-    private Long byteSize = 0L;
+    private final AtomicLong byteSize = new AtomicLong(0);
 
     /**
      * Constructor
@@ -43,13 +44,13 @@ public class MemoryStat implements MetricStat {
     }
 
     @Override
-    public String getValue() {
-        byteSize = getByteSize();
-        return RamUsageEstimator.humanReadableUnits(byteSize);
+    public synchronized String getValue() {
+        this.byteSize.set(getByteSize());
+        return RamUsageEstimator.humanReadableUnits(this.byteSize.get());
     }
 
     @Override
     public MemoryStatSnapshot getStatSnapshot() {
-        return MemoryStatSnapshot.builder().statName(statName).value(getValue()).byteSize(byteSize).build();
+        return MemoryStatSnapshot.builder().statName(statName).value(getValue()).byteSize(this.byteSize.get()).build();
     }
 }

@@ -27,7 +27,7 @@ import java.util.Collection;
 @AllArgsConstructor
 public class MemoryStatSnapshot implements Writeable, StatSnapshot<String> {
 
-    private MetricStatName statName;
+    private final MetricStatName statName;
     private String value;
     private long byteSize;
 
