@@ -255,8 +255,8 @@ public class NeuralStatsTransportActionTests extends OpenSearchTestCase {
         nodeStats2.put(EventStatName.TEXT_EMBEDDING_PROCESSOR_EXECUTIONS, snapshot2);
 
         List<NeuralStatsNodeResponse> responses = Arrays.asList(
-            new NeuralStatsNodeResponse(node1, nodeStats1),
-            new NeuralStatsNodeResponse(node2, nodeStats2)
+            new NeuralStatsNodeResponse(node1, nodeStats1, new HashMap<>()),
+            new NeuralStatsNodeResponse(node2, nodeStats2, new HashMap<>())
         );
 
         // Create info stats
