@@ -125,6 +125,11 @@ public class SparseTokensFieldMapperTests extends AbstractSparseTestBase {
         assertNotNull(cloned);
         assertNotSame(mapper, cloned);
         assertEquals(mapper.simpleName(), cloned.simpleName());
+        assertEquals(mapper.contentType(), cloned.contentType());
+        assertEquals(mapper.getSparseMethodContext(), cloned.getSparseMethodContext());
+        assertEquals(mapper.isStored(), cloned.isStored());
+        assertEquals(mapper.isHasDocValues(), cloned.isHasDocValues());
+        assertEquals(mapper.fieldType().getClass(), cloned.fieldType().getClass());
     }
 
     public void testFieldType_returnsCorrectType() {
