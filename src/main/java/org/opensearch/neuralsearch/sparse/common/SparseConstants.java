@@ -12,6 +12,7 @@ public final class SparseConstants {
     public static final String SEISMIC = "seismic";
     public static final String CLUSTER_RATIO_FIELD = "cluster_ratio";
     public static final String APPROXIMATE_THRESHOLD_FIELD = "approximate_threshold";
+    public static final String INDEX_THREAD_QTY = "indexThreadQty";
 
     /**
      * DEFAULT_APPROXIMATE_THRESHOLD: Minimum document collection number to trigger Seismic
