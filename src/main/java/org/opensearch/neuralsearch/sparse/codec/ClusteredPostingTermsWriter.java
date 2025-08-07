@@ -29,8 +29,10 @@ import org.opensearch.neuralsearch.sparse.algorithm.DocumentCluster;
 import org.opensearch.neuralsearch.sparse.algorithm.PostingClusters;
 import org.opensearch.neuralsearch.sparse.algorithm.RandomClustering;
 import org.opensearch.neuralsearch.sparse.algorithm.PostingClustering;
+import org.opensearch.neuralsearch.sparse.cache.ForwardIndexCache;
 import org.opensearch.neuralsearch.sparse.common.DocWeight;
-import org.opensearch.neuralsearch.sparse.common.InMemoryKey;
+import org.opensearch.neuralsearch.sparse.cache.CacheGatedForwardIndexReader;
+import org.opensearch.neuralsearch.sparse.cache.CacheKey;
 import org.opensearch.neuralsearch.sparse.common.IteratorWrapper;
 import org.opensearch.neuralsearch.sparse.common.SparseVector;
 import org.opensearch.neuralsearch.sparse.common.SparseVectorForwardIndex;
@@ -47,13 +49,13 @@ import org.opensearch.neuralsearch.sparse.algorithm.ByteQuantizer;
 import static org.opensearch.neuralsearch.sparse.common.SparseConstants.SUMMARY_PRUNE_RATIO_FIELD;
 import static org.opensearch.neuralsearch.sparse.common.SparseConstants.CLUSTER_RATIO_FIELD;
 import static org.opensearch.neuralsearch.sparse.common.SparseConstants.N_POSTINGS_FIELD;
-import static org.opensearch.neuralsearch.sparse.common.SparseConstants.Seismic.DEFAULT_POSTING_PRUNE_RATIO;
-import static org.opensearch.neuralsearch.sparse.common.SparseConstants.Seismic.DEFAULT_POSTING_MINIMUM_LENGTH;
 import static org.opensearch.neuralsearch.sparse.common.SparseConstants.Seismic.DEFAULT_N_POSTINGS;
+import static org.opensearch.neuralsearch.sparse.common.SparseConstants.Seismic.DEFAULT_POSTING_MINIMUM_LENGTH;
+import static org.opensearch.neuralsearch.sparse.common.SparseConstants.Seismic.DEFAULT_POSTING_PRUNE_RATIO;
 
 /**
  * ClusteredPostingTermsWriter is used to write postings for each segment.
- * It handles the logic to write data to both in-memory and lucene index.
+ * It handles the logic to write data to both cache and lucene index.
  */
 @Log4j2
 public class ClusteredPostingTermsWriter extends PushPostingsWriterBase {
@@ -62,7 +64,7 @@ public class ClusteredPostingTermsWriter extends PushPostingsWriterBase {
     private final List<DocWeight> docWeights = new ArrayList<>();
     private BytesRef currentTerm;
     private PostingClustering postingClustering;
-    private InMemoryKey.IndexKey key;
+    private CacheKey key;
     private final int version;
     private final String codec_name;
     private SegmentWriteState state;
@@ -88,7 +90,7 @@ public class ClusteredPostingTermsWriter extends PushPostingsWriterBase {
 
     public void setFieldAndMaxDoc(FieldInfo fieldInfo, int maxDoc, boolean isMerge) {
         super.setField(fieldInfo);
-        key = new InMemoryKey.IndexKey(this.state.segmentInfo, fieldInfo);
+        key = new CacheKey(this.state.segmentInfo, fieldInfo);
 
         if (!isMerge) {
             setPostingClustering(maxDoc);
@@ -106,7 +108,7 @@ public class ClusteredPostingTermsWriter extends PushPostingsWriterBase {
     }
 
     private void setPostingClustering(int maxDoc) {
-        SparseVectorForwardIndex index = InMemorySparseVectorForwardIndex.getOrCreate(key, maxDoc);
+        SparseVectorForwardIndex index = ForwardIndexCache.getInstance().getOrCreate(key, maxDoc);
 
         SparseBinaryDocValuesPassThrough luceneReader = null;
         DocValuesFormat fmt = this.state.segmentInfo.getCodec().docValuesFormat();
@@ -225,6 +227,7 @@ public class ClusteredPostingTermsWriter extends PushPostingsWriterBase {
         IOUtils.closeWhileHandlingException(this.postingOut);
         if (this.docValuesProducer != null) {
             IOUtils.closeWhileHandlingException(this.docValuesProducer);
+            this.docValuesProducer = null;
         }
     }
 

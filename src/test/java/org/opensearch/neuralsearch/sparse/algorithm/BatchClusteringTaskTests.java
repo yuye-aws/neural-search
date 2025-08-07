@@ -13,7 +13,7 @@ import org.apache.lucene.util.BytesRef;
 import org.junit.Before;
 import org.mockito.MockitoAnnotations;
 import org.opensearch.neuralsearch.sparse.AbstractSparseTestBase;
-import org.opensearch.neuralsearch.sparse.common.InMemoryKey;
+import org.opensearch.neuralsearch.sparse.cache.CacheKey;
 import org.opensearch.neuralsearch.sparse.TestsPrepareUtils;
 
 import java.util.Arrays;
@@ -22,11 +22,12 @@ import java.util.List;
 public class BatchClusteringTaskTests extends AbstractSparseTestBase {
     private List<BytesRef> terms;
     private MergeState mergeState;
-    private InMemoryKey.IndexKey key;
+    private CacheKey key;
 
     @Before
     @Override
-    public void setUp() throws Exception {
+    @SneakyThrows
+    public void setUp() {
         super.setUp();
         MockitoAnnotations.openMocks(this);
 
@@ -35,7 +36,7 @@ public class BatchClusteringTaskTests extends AbstractSparseTestBase {
 
         terms = Arrays.asList(new BytesRef("term1"), new BytesRef("term2"));
         mergeState = TestsPrepareUtils.prepareMergeState(isEmptyMaxDocs);
-        key = new InMemoryKey.IndexKey(segmentInfo, "test_field");
+        key = new CacheKey(segmentInfo, "test_field");
     }
 
     public void testConstructorDeepCopiesTerms() throws Exception {
