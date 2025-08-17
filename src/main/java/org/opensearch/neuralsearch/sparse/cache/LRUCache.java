@@ -33,7 +33,9 @@ public class LRUCache {
     private static final LRUCache INSTANCE = new LRUCache();
 
     // Map to track term access with LRU ordering
-    private final Map<TermKey, Boolean> accessRecencyMap;
+    private final Map<TermKey, Boolean> accessRecencyTermMap;
+    // Map to track document access with LRU ordering
+    private final Map<DocumentKey, Boolean> accessRecencyDocumentMap;
 
     /**
      * The default initial capacity - MUST be a power of two.
@@ -76,14 +78,35 @@ public class LRUCache {
      *
      * @return The least recently used TermKey, or null if the cache is empty
      */
-    private TermKey getLeastRecentlyUsedItem() {
-        synchronized (accessRecencyMap) {
-            if (accessRecencyMap.isEmpty()) {
+    private TermKey getLeastRecentlyUsedTerm() {
+        synchronized (accessRecencyTermMap) {
+            if (accessRecencyTermMap.isEmpty()) {
                 return null;
             }
 
             // With accessOrder is true in the LinkedHashMap, the first entry is the least recently used
-            Iterator<Map.Entry<TermKey, Boolean>> iterator = accessRecencyMap.entrySet().iterator();
+            Iterator<Map.Entry<TermKey, Boolean>> iterator = accessRecencyTermMap.entrySet().iterator();
+            if (iterator.hasNext()) {
+                return iterator.next().getKey();
+            }
+            return null;
+        }
+    }
+
+    /**
+     * Retrieves the least recently used term key without affecting its position in the access order.
+     * This is useful for inspection or for implementing custom eviction policies.
+     *
+     * @return The least recently used TermKey, or null if the cache is empty
+     */
+    private DocumentKey getLeastRecentlyUsedDocument() {
+        synchronized (accessRecencyDocumentMap) {
+            if (accessRecencyDocumentMap.isEmpty()) {
+                return null;
+            }
+
+            // With accessOrder is true in the LinkedHashMap, the first entry is the least recently used
+            Iterator<Map.Entry<DocumentKey, Boolean>> iterator = accessRecencyDocumentMap.entrySet().iterator();
             if (iterator.hasNext()) {
                 return iterator.next().getKey();
             }
@@ -106,7 +129,7 @@ public class LRUCache {
         // Continue evicting until we've freed enough memory or the cache is empty
         while (ramBytesReleased < ramBytesToRelease) {
             // Get the least recently used term
-            TermKey leastRecentlyUsedKey = getLeastRecentlyUsedItem();
+            TermKey leastRecentlyUsedKey = getLeastRecentlyUsedTerm();
 
             if (leastRecentlyUsedKey == null) {
                 // Cache is empty, nothing more to evict
@@ -139,8 +162,8 @@ public class LRUCache {
      */
     private long evictTerm(TermKey termKey) {
         // Remove from access tracking
-        synchronized (accessRecencyMap) {
-            if (accessRecencyMap.remove(termKey) == null) {
+        synchronized (accessRecencyTermMap) {
+            if (accessRecencyTermMap.remove(termKey) == null) {
                 return 0;
             }
         }
@@ -148,41 +171,9 @@ public class LRUCache {
         CacheKey cacheKey = termKey.getCacheKey();
         BytesRef term = termKey.getTerm();
 
-        // Get the caches
-        ForwardIndexCacheItem forwardIndexCache = ForwardIndexCache.getInstance().get(cacheKey);
+        // Get cached posting cluster
         ClusteredPostingCacheItem clusteredPostingCache = ClusteredPostingCache.getInstance().get(cacheKey);
-        SparseVectorWriter forwardIndexWriter = forwardIndexCache.getWriter();
-
-        PostingClusters postingClusters = null;
-        try {
-            postingClusters = clusteredPostingCache.getReader().read(term);
-        } catch (IOException e) {
-            log.error("Error while reading posting clusters for term {} from cache for index {}", term, cacheKey, e);
-            return 0;
-        }
-
-        if (postingClusters == null) {
-            return 0;
-        }
-
-        // Track bytes released
-        long ramBytesReleased = 0;
-
-        // Evict from forward index cache
-        List<DocumentCluster> clusters = postingClusters.getClusters();
-        for (DocumentCluster cluster : clusters) {
-            Iterator<DocWeight> iterator = cluster.iterator();
-            while (iterator.hasNext()) {
-                DocWeight docWeight = iterator.next();
-                ramBytesReleased += forwardIndexWriter.erase(docWeight.getDocID());
-            }
-        }
-
-        // Evict from clustered posting cache
-        ramBytesReleased += clusteredPostingCache.getWriter().erase(term);
-
-        log.debug("Evicted term {} from cache for index {}", term, cacheKey);
-        return ramBytesReleased;
+        return clusteredPostingCache.getWriter().erase(term);
     }
 
     /**
@@ -191,8 +182,11 @@ public class LRUCache {
      * @param cacheKey The cache key to remove
      */
     public void removeIndex(@NonNull CacheKey cacheKey) {
-        synchronized (accessRecencyMap) {
-            accessRecencyMap.keySet().removeIf(key -> key.getCacheKey().equals(cacheKey));
+        synchronized (accessRecencyTermMap) {
+            accessRecencyTermMap.keySet().removeIf(key -> key.getCacheKey().equals(cacheKey));
+        }
+        synchronized (accessRecencyDocumentMap) {
+            accessRecencyDocumentMap.keySet().removeIf(key -> key.getCacheKey().equals(cacheKey));
         }
     }
 
@@ -208,6 +202,21 @@ public class LRUCache {
         public TermKey(CacheKey cacheKey, BytesRef term) {
             this.cacheKey = cacheKey;
             this.term = term;
+        }
+    }
+
+    /**
+     * Key class that combines a cache key and document for tracking LRU access.
+     */
+    @Getter
+    @EqualsAndHashCode
+    private static class DocumentKey {
+        private final CacheKey cacheKey;
+        private final int docId;
+
+        public DocumentKey(CacheKey cacheKey, int docId) {
+            this.cacheKey = cacheKey;
+            this.docId = docId;
         }
     }
 }
