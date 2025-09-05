@@ -15,10 +15,10 @@ import static org.mockito.Mockito.when;
 import static org.opensearch.index.query.AbstractQueryBuilder.BOOST_FIELD;
 import static org.opensearch.index.query.AbstractQueryBuilder.NAME_FIELD;
 import static org.opensearch.neuralsearch.query.NeuralSparseQueryBuilder.ANALYZER_FIELD;
-import static org.opensearch.neuralsearch.sparse.query.SparseAnnQueryBuilder.CUT_FIELD;
 import static org.opensearch.neuralsearch.sparse.query.SparseAnnQueryBuilder.HEAP_FACTOR_FIELD;
 import static org.opensearch.neuralsearch.sparse.query.SparseAnnQueryBuilder.METHOD_PARAMETERS_FIELD;
 import static org.opensearch.neuralsearch.sparse.query.SparseAnnQueryBuilder.TOP_K_FIELD;
+import static org.opensearch.neuralsearch.sparse.query.SparseAnnQueryBuilder.TOP_N_FIELD;
 import static org.opensearch.neuralsearch.util.TestUtils.DELTA_FOR_FLOATS_ASSERTION;
 import static org.opensearch.neuralsearch.util.TestUtils.xContentBuilderToMap;
 import static org.opensearch.neuralsearch.query.NeuralSparseQueryBuilder.MAX_TOKEN_SCORE_FIELD;
@@ -499,7 +499,7 @@ public class NeuralSparseQueryBuilderTests extends OpenSearchTestCase {
         assertEquals(sparseAnnQueryBuilder.k(), methodParametersMap.get(TOP_K_FIELD.getPreferredName()));
         float hf = ((Number) methodParametersMap.get(HEAP_FACTOR_FIELD.getPreferredName())).floatValue();
         assertEquals(sparseAnnQueryBuilder.heapFactor(), hf, DELTA_FOR_FLOATS_ASSERTION);
-        assertEquals(sparseAnnQueryBuilder.queryCut(), methodParametersMap.get(CUT_FIELD.getPreferredName()));
+        assertEquals(sparseAnnQueryBuilder.queryCut(), methodParametersMap.get(TOP_N_FIELD.getPreferredName()));
     }
 
     public void testStreams_whenCurrentVersion_thenSuccess() {
@@ -1152,7 +1152,7 @@ public class NeuralSparseQueryBuilderTests extends OpenSearchTestCase {
         Query query = sparseEncodingQueryBuilder.doToQuery(mockedQueryShardContext);
         assertTrue(query instanceof SparseVectorQuery);
         SparseVectorQuery sparseVectorQuery = (SparseVectorQuery) query;
-        assertEquals(sparseVectorQuery.getOriginalQuery(), booleanQueryBuilder.build());
+        assertEquals(sparseVectorQuery.getFallbackQuery(), booleanQueryBuilder.build());
     }
 
     @SneakyThrows
@@ -1183,7 +1183,7 @@ public class NeuralSparseQueryBuilderTests extends OpenSearchTestCase {
         Query query = sparseEncodingQueryBuilder.doToQuery(mockedQueryShardContext);
         assertTrue(query instanceof SparseVectorQuery);
         SparseVectorQuery sparseVectorQuery = (SparseVectorQuery) query;
-        assertEquals(sparseVectorQuery.getOriginalQuery(), booleanQueryBuilder.build());
+        assertEquals(sparseVectorQuery.getFallbackQuery(), booleanQueryBuilder.build());
     }
 
     private void mockSeismic(QueryRewriteContext queryRewriteContext) {

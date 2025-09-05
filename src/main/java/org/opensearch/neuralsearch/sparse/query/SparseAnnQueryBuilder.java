@@ -6,13 +6,13 @@ package org.opensearch.neuralsearch.sparse.query;
 
 import lombok.Builder;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.lucene.search.Query;
-import org.opensearch.Version;
 import org.opensearch.core.common.ParsingException;
 import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.core.xcontent.XContentParser.Token;
+import org.opensearch.neuralsearch.query.NeuralSparseQueryBuilder;
 import org.opensearch.neuralsearch.sparse.data.SparseVector;
 import org.opensearch.neuralsearch.sparse.mapper.SparseTokensFieldMapper;
 import org.opensearch.core.ParseField;
@@ -32,6 +32,15 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.opensearch.neuralsearch.sparse.mapper.SparseTokensFieldType;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * SparseEncodingQueryBuilder is responsible for handling "neural_sparse" query types. It uses an ML NEURAL_SPARSE model
@@ -61,7 +70,6 @@ public class SparseAnnQueryBuilder extends AbstractQueryBuilder<SparseAnnQueryBu
     private Float heapFactor;
     private QueryBuilder filter;
     private Query fallbackQuery;
-    @Setter(lombok.AccessLevel.NONE)
     private Map<String, Float> queryTokens;
 
     private static final int DEFAULT_TOP_K = 10;
