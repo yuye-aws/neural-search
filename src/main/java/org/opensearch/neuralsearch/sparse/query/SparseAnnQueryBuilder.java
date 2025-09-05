@@ -4,31 +4,33 @@
  */
 package org.opensearch.neuralsearch.sparse.query;
 
-import com.google.common.annotations.VisibleForTesting;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.experimental.Accessors;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.lucene.search.Query;
-import org.opensearch.core.ParseField;
 import org.opensearch.core.common.ParsingException;
+import org.opensearch.core.xcontent.XContentParser;
+import org.opensearch.core.xcontent.XContentParser.Token;
+import org.opensearch.neuralsearch.query.NeuralSparseQueryBuilder;
+import org.opensearch.neuralsearch.sparse.data.SparseVector;
+import org.opensearch.neuralsearch.sparse.mapper.SparseTokensFieldMapper;
+import org.opensearch.core.ParseField;
 import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.core.common.io.stream.StreamOutput;
 import org.opensearch.core.xcontent.XContentBuilder;
-import org.opensearch.core.xcontent.XContentParser;
-import org.opensearch.core.xcontent.XContentParser.Token;
 import org.opensearch.index.mapper.MappedFieldType;
 import org.opensearch.index.query.AbstractQueryBuilder;
 import org.opensearch.index.query.QueryBuilder;
 import org.opensearch.index.query.QueryRewriteContext;
 import org.opensearch.index.query.QueryShardContext;
-import org.opensearch.neuralsearch.query.NeuralSparseQueryBuilder;
-import org.opensearch.neuralsearch.sparse.data.SparseVector;
-import org.opensearch.neuralsearch.sparse.mapper.SparseTokensFieldMapper;
+
+import com.google.common.annotations.VisibleForTesting;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.opensearch.neuralsearch.sparse.mapper.SparseTokensFieldType;
 
 import java.io.IOException;
@@ -41,9 +43,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * SparseAnnQueryBuilder is a sub query builder of NeuralSparseQueryBuilder.
- * It's responsible for handling "method_parameters" from "neural_sparse" query types when it works SEISMIC index.
- * It wraps a NeuralSparseQueryBuilder so that it can determine when to fall back to plain neural sparse query.
+ * SparseEncodingQueryBuilder is responsible for handling "neural_sparse" query types. It uses an ML NEURAL_SPARSE model
+ * or SPARSE_TOKENIZE model to produce a Map with String keys and Float values for input text. Then it will be transformed
+ * to Lucene FeatureQuery wrapped by Lucene BooleanQuery.
  */
 @Getter
 @Setter
@@ -68,7 +70,6 @@ public class SparseAnnQueryBuilder extends AbstractQueryBuilder<SparseAnnQueryBu
     private Float heapFactor;
     private QueryBuilder filter;
     private Query fallbackQuery;
-    @Setter(lombok.AccessLevel.NONE)
     private Map<String, Float> queryTokens;
 
     private static final int DEFAULT_TOP_K = 10;
