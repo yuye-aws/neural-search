@@ -62,8 +62,11 @@ public class SeismicBaseScorerTests extends AbstractSparseTestBase {
     @Mock
     private Bits acceptedDocs;
 
+<<<<<<< HEAD
     private DocumentCluster cluster;
 
+=======
+>>>>>>> e12491db (Rebase to liyun (#163))
     private static final String FIELD_NAME = "test_field";
     private static final int MAX_DOC_COUNT = 10;
     private static final List<String> TEST_TOKENS = Arrays.asList("token1", "token2");

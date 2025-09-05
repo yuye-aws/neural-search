@@ -18,10 +18,10 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongBitSet;
 import org.opensearch.neuralsearch.sparse.accessor.SparseVectorReader;
+import org.opensearch.neuralsearch.sparse.data.DocumentCluster;
 import org.opensearch.neuralsearch.sparse.codec.SparsePostingsEnum;
 import org.opensearch.neuralsearch.sparse.common.DocWeightIterator;
 import org.opensearch.neuralsearch.sparse.common.IteratorWrapper;
-import org.opensearch.neuralsearch.sparse.data.DocumentCluster;
 import org.opensearch.neuralsearch.sparse.data.SparseVector;
 
 import java.io.IOException;
@@ -49,9 +49,12 @@ public abstract class SeismicBaseScorer extends Scorer {
     protected SparseVectorReader reader;
     protected List<Scorer> subScorers = new ArrayList<>();
 
+<<<<<<< HEAD
     /**
      * Creates base scorer with query context and initializes sub-scorers for each token.
      */
+=======
+>>>>>>> e12491db (Rebase to liyun (#163))
     public SeismicBaseScorer(
         LeafReader leafReader,
         String fieldName,
@@ -73,6 +76,14 @@ public abstract class SeismicBaseScorer extends Scorer {
 
     protected void initialize(LeafReader leafReader) throws IOException {
         Terms terms = Terms.getTerms(leafReader, fieldName);
+<<<<<<< HEAD
+=======
+        if (terms == null) {
+            log.error(String.format(Locale.ROOT, "Terms in field %s is null!", fieldName));
+            return;
+        }
+
+>>>>>>> e12491db (Rebase to liyun (#163))
         for (String token : sparseQueryContext.getTokens()) {
             TermsEnum termsEnum = terms.iterator();
             BytesRef term = new BytesRef(token);
@@ -81,6 +92,7 @@ public abstract class SeismicBaseScorer extends Scorer {
             }
             PostingsEnum postingsEnum = termsEnum.postings(null, PostingsEnum.FREQS);
             if (!(postingsEnum instanceof SparsePostingsEnum sparsePostingsEnum)) {
+<<<<<<< HEAD
                 throw new IllegalStateException(
                     String.format(
                         Locale.ROOT,
@@ -88,14 +100,24 @@ public abstract class SeismicBaseScorer extends Scorer {
                         postingsEnum == null ? null : postingsEnum.getClass().getName()
                     )
                 );
+=======
+                log.error(
+                    "posting enum is not SparsePostingsEnum, actual type: {}",
+                    postingsEnum == null ? null : postingsEnum.getClass().getName()
+                );
+                return;
+>>>>>>> e12491db (Rebase to liyun (#163))
             }
             subScorers.add(new SingleScorer(sparsePostingsEnum));
         }
     }
 
+<<<<<<< HEAD
     /**
      * Performs upfront search across all sub-scorers and returns top results.
      */
+=======
+>>>>>>> e12491db (Rebase to liyun (#163))
     protected List<Pair<Integer, Integer>> searchUpfront(int resultSize) throws IOException {
         HeapWrapper resultHeap = new HeapWrapper(resultSize);
         for (Scorer scorer : subScorers) {
@@ -125,6 +147,7 @@ public abstract class SeismicBaseScorer extends Scorer {
         return new PriorityQueue<>(Comparator.comparingInt(Pair::getRight));
     }
 
+<<<<<<< HEAD
     /**
      * Wrapper for priority queue maintaining top-K results with threshold optimization.
      */
@@ -148,6 +171,25 @@ public abstract class SeismicBaseScorer extends Scorer {
             if (pair.getRight() > heapThreshold) {
                 heap.add(pair);
                 if (heap.size() > k) {
+=======
+    protected static class HeapWrapper {
+        private final PriorityQueue<Pair<Integer, Integer>> heap = makeHeap();
+        private float heapThreshold = Integer.MIN_VALUE;
+        private final int K;
+
+        HeapWrapper(int K) {
+            this.K = K;
+        }
+
+        public boolean isFull() {
+            return heap.size() == this.K;
+        }
+
+        public void add(Pair<Integer, Integer> pair) {
+            if (pair.getRight() > heapThreshold) {
+                heap.add(pair);
+                if (heap.size() > K) {
+>>>>>>> e12491db (Rebase to liyun (#163))
                     heap.poll();
                     assert heap.peek() != null;
                     heapThreshold = heap.peek().getRight();
@@ -155,9 +197,16 @@ public abstract class SeismicBaseScorer extends Scorer {
             }
         }
 
+<<<<<<< HEAD
         /**
          * Returns heap contents as ordered list sorted by document ID.
          */
+=======
+        public List<Pair<Integer, Integer>> toList() {
+            return new ArrayList<>(heap);
+        }
+
+>>>>>>> e12491db (Rebase to liyun (#163))
         public List<Pair<Integer, Integer>> toOrderedList() {
             List<Pair<Integer, Integer>> list = new ArrayList<>(heap);
             list.sort((a, b) -> Float.compare(a.getLeft(), b.getLeft()));
@@ -173,9 +222,12 @@ public abstract class SeismicBaseScorer extends Scorer {
         }
     }
 
+<<<<<<< HEAD
     /**
      * Scorer for individual query tokens using cluster-based iteration.
      */
+=======
+>>>>>>> e12491db (Rebase to liyun (#163))
     class SingleScorer extends Scorer {
         private final IteratorWrapper<DocumentCluster> clusterIter;
         private DocWeightIterator docs = null;
@@ -196,9 +248,12 @@ public abstract class SeismicBaseScorer extends Scorer {
         public DocIdSetIterator iterator() {
             return new DocIdSetIterator() {
 
+<<<<<<< HEAD
                 /**
                  * Finds next cluster that qualifies based on score threshold and heap factor.
                  */
+=======
+>>>>>>> e12491db (Rebase to liyun (#163))
                 private DocumentCluster nextQualifiedCluster() {
                     if (clusterIter == null) {
                         return null;
@@ -270,16 +325,22 @@ public abstract class SeismicBaseScorer extends Scorer {
         }
     }
 
+<<<<<<< HEAD
     /**
      * Iterator over pre-computed search results with score retrieval via cost().
      */
+=======
+>>>>>>> e12491db (Rebase to liyun (#163))
     public static class ResultsDocValueIterator extends DocIdSetIterator {
         private final IteratorWrapper<Pair<Integer, Integer>> resultsIterator;
         private int docId;
 
+<<<<<<< HEAD
         /**
          * Creates iterator from list of document ID and score pairs.
          */
+=======
+>>>>>>> e12491db (Rebase to liyun (#163))
         public ResultsDocValueIterator(List<Pair<Integer, Integer>> results) {
             resultsIterator = new IteratorWrapper<>(results.iterator());
             docId = -1;
@@ -316,9 +377,13 @@ public abstract class SeismicBaseScorer extends Scorer {
             return NO_MORE_DOCS;
         }
 
+<<<<<<< HEAD
         /**
          * Returns pre-stored score for current document via cost method.
          */
+=======
+        // we use cost() to return pre-stored score
+>>>>>>> e12491db (Rebase to liyun (#163))
         @Override
         public long cost() {
             if (resultsIterator.getCurrent() == null || docId == NO_MORE_DOCS) {
