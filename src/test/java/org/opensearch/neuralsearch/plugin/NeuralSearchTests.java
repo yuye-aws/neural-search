@@ -125,7 +125,8 @@ public class NeuralSearchTests extends OpenSearchQueryTestCase {
                 NeuralSearchSettings.NEURAL_STATS_ENABLED,
                 NeuralSearchSettings.AGENTIC_SEARCH_ENABLED,
                 NeuralSearchSettings.NEURAL_CIRCUIT_BREAKER_LIMIT,
-                NeuralSearchSettings.NEURAL_CIRCUIT_BREAKER_OVERHEAD
+                NeuralSearchSettings.NEURAL_CIRCUIT_BREAKER_OVERHEAD,
+                NeuralSearchSettings.SPARSE_ALGO_PARAM_INDEX_THREAD_QTY_SETTING
             )
         );
         when(clusterService.getClusterSettings()).thenReturn(clusterSettings);
@@ -200,7 +201,7 @@ public class NeuralSearchTests extends OpenSearchQueryTestCase {
 
     public void testGetSettings() {
         List<Setting<?>> settings = plugin.getSettings();
-        assertEquals(8, settings.size());
+        assertEquals(9, settings.size());
     }
 
     public void testRequestProcessors() {
@@ -233,7 +234,7 @@ public class NeuralSearchTests extends OpenSearchQueryTestCase {
 
         assertNotNull(executorBuilders);
         assertFalse(executorBuilders.isEmpty());
-        assertEquals("Unexpected number of executor builders are registered", 1, executorBuilders.size());
+        assertEquals("Unexpected number of executor builders are registered", 2, executorBuilders.size());
         assertTrue(executorBuilders.get(0) instanceof FixedExecutorBuilder);
     }
 
