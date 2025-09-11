@@ -52,7 +52,7 @@ public class ClusteredPostingCacheItemTests extends AbstractSparseTestBase {
         when(globalRecorder.record(anyLong())).thenReturn(true);
         CacheKey cacheKey = prepareUniqueCacheKey(TestsPrepareUtils.prepareSegmentInfo());
         lruTermCache = mock(LruTermCache.class);
-        cacheItem = new ClusteredPostingCacheItem(cacheKey, globalRecorder, lruTermCache);
+        cacheItem = new ClusteredPostingCacheItem(cacheKey, globalRecorder);
     }
 
     public void test_constructor() {

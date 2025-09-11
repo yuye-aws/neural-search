@@ -29,8 +29,6 @@ public class ClusteredPostingCacheTests extends AbstractSparseTestBase {
     private ClusteredPostingCache clusteredPostingCache;
     @Mock
     private RamBytesRecorder globalRecorder;
-    @Mock
-    private LruTermCache mockLruTermCache;
 
     /**
      * Set up the test environment before each test.
@@ -45,7 +43,7 @@ public class ClusteredPostingCacheTests extends AbstractSparseTestBase {
         clusteredPostingCache = new TestClusteredPostingCache();
         emptyClusteredPostingCacheSize = clusteredPostingCache.ramBytesUsed();
         CacheKey cacheKey = new CacheKey(TestsPrepareUtils.prepareSegmentInfo(), TestsPrepareUtils.prepareKeyFieldInfo());
-        emptyClusteredPostingCacheItemSize = new ClusteredPostingCacheItem(cacheKey, globalRecorder, mockLruTermCache).ramBytesUsed();
+        emptyClusteredPostingCacheItemSize = new ClusteredPostingCacheItem(cacheKey, globalRecorder).ramBytesUsed();
         clusteredPostingCache = new ClusteredPostingCache();
     }
 

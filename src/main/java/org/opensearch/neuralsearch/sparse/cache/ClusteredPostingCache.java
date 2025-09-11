@@ -38,6 +38,6 @@ public class ClusteredPostingCache extends MemMonitoredCache<ClusteredPostingCac
     @NonNull
     public ClusteredPostingCacheItem getOrCreate(@NonNull CacheKey key) {
         RamBytesRecorder globalRecorder = MemoryUsageManager.getInstance().getMemoryUsageTracker();
-        return super.getOrCreate(key, k -> new ClusteredPostingCacheItem(k, globalRecorder, LruTermCache.getInstance()));
+        return super.getOrCreate(key, k -> new ClusteredPostingCacheItem(k, globalRecorder));
     }
 }

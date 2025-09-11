@@ -4,6 +4,7 @@
  */
 package org.opensearch.neuralsearch.plugin;
 
+import static org.opensearch.neuralsearch.settings.NeuralSearchSettings.DEFAULT_INDEX_THREAD_QTY;
 import static org.opensearch.neuralsearch.settings.NeuralSearchSettings.HYBRID_COLLAPSE_DOCS_PER_GROUP_PER_SUBQUERY;
 import static org.opensearch.neuralsearch.settings.NeuralSearchSettings.RERANKER_MAX_DOC_FIELDS;
 import static org.opensearch.neuralsearch.settings.NeuralSearchSettings.AGENTIC_SEARCH_ENABLED;
@@ -47,6 +48,7 @@ import org.opensearch.neuralsearch.sparse.cache.CircuitBreakerManager;
 import org.opensearch.neuralsearch.sparse.cache.MemoryUsageManager;
 import org.opensearch.neuralsearch.sparse.codec.SparseCodecService;
 import org.opensearch.neuralsearch.sparse.common.SparseConstants;
+import org.opensearch.neuralsearch.sparse.common.SparseFieldUtils;
 import org.opensearch.neuralsearch.sparse.mapper.SparseTokensFieldMapper;
 import org.opensearch.neuralsearch.stats.events.EventStatsManager;
 import org.opensearch.neuralsearch.stats.info.InfoStatsManager;
@@ -54,6 +56,9 @@ import org.opensearch.index.mapper.MappingTransformer;
 import org.opensearch.neuralsearch.mapper.SemanticFieldMapper;
 import org.opensearch.neuralsearch.mappingtransformer.SemanticMappingTransformer;
 import org.opensearch.neuralsearch.processor.factory.SemanticFieldProcessorFactory;
+import org.opensearch.neuralsearch.transport.NeuralSparseClearCacheAction;
+import org.opensearch.neuralsearch.transport.NeuralSparseClearCacheTransportAction;
+import org.opensearch.plugins.EnginePlugin;
 import org.opensearch.plugins.MapperPlugin;
 import org.opensearch.plugins.CircuitBreakerPlugin;
 import org.opensearch.threadpool.FixedExecutorBuilder;
@@ -243,7 +248,14 @@ public class NeuralSearch extends Plugin
     public List<ExecutorBuilder<?>> getExecutorBuilders(Settings settings) {
         return List.of(
             HybridQueryExecutor.getExecutorBuilder(settings),
-            new FixedExecutorBuilder(settings, SparseConstants.THREAD_POOL_NAME, 1, -1, SparseConstants.THREAD_POOL_NAME, false)
+            new FixedExecutorBuilder(
+                settings,
+                SparseConstants.THREAD_POOL_NAME,
+                DEFAULT_INDEX_THREAD_QTY,
+                -1,
+                SparseConstants.THREAD_POOL_NAME,
+                false
+            )
         );
     }
 
