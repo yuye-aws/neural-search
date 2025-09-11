@@ -9,14 +9,13 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.junit.After;
 import org.junit.Before;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.opensearch.neuralsearch.sparse.AbstractSparseTestBase;
 import org.opensearch.neuralsearch.sparse.TestsPrepareUtils;
 
 import java.util.List;
 
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class ClusteredPostingCacheTests extends AbstractSparseTestBase {
@@ -27,8 +26,6 @@ public class ClusteredPostingCacheTests extends AbstractSparseTestBase {
     private long emptyClusteredPostingCacheSize;
     private long emptyClusteredPostingCacheItemSize;
     private ClusteredPostingCache clusteredPostingCache;
-    @Mock
-    private RamBytesRecorder globalRecorder;
 
     /**
      * Set up the test environment before each test.
@@ -39,9 +36,9 @@ public class ClusteredPostingCacheTests extends AbstractSparseTestBase {
     @SneakyThrows
     public void setUp() {
         super.setUp();
-        MockitoAnnotations.openMocks(this);
         clusteredPostingCache = new TestClusteredPostingCache();
         emptyClusteredPostingCacheSize = clusteredPostingCache.ramBytesUsed();
+        RamBytesRecorder globalRecorder = mock(RamBytesRecorder.class);
         CacheKey cacheKey = new CacheKey(TestsPrepareUtils.prepareSegmentInfo(), TestsPrepareUtils.prepareKeyFieldInfo());
         emptyClusteredPostingCacheItemSize = new ClusteredPostingCacheItem(cacheKey, globalRecorder).ramBytesUsed();
         clusteredPostingCache = new ClusteredPostingCache();
@@ -118,7 +115,7 @@ public class ClusteredPostingCacheTests extends AbstractSparseTestBase {
         assertEquals("key is marked non-null but is null", exception.getMessage());
     }
 
-    private class TestClusteredPostingCache extends ClusteredPostingCache {
+    private static class TestClusteredPostingCache extends ClusteredPostingCache {
         TestClusteredPostingCache() {
             super();
         }
