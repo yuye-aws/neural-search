@@ -388,13 +388,14 @@ public class SparseIndexingIT extends SparseBaseIT {
         createSparseIndex(TEST_INDEX_NAME, TEST_SPARSE_FIELD_NAME, docCount, 1.0f, 0.5f, docCount);
 
         List<Map<String, Float>> docs = new ArrayList<>();
+        float epsilon = 1e-7F;
         for (int i = 0; i < docCount; ++i) {
             Map<String, Float> tokens = new HashMap<>();
-            tokens.put("1000", randomFloat());
-            tokens.put("2000", randomFloat());
-            tokens.put("3000", randomFloat());
-            tokens.put("4000", randomFloat());
-            tokens.put("5000", randomFloat());
+            tokens.put("1000", randomFloat() + epsilon);
+            tokens.put("2000", randomFloat() + epsilon);
+            tokens.put("3000", randomFloat() + epsilon);
+            tokens.put("4000", randomFloat() + epsilon);
+            tokens.put("5000", randomFloat() + epsilon);
             docs.add(tokens);
         }
 
@@ -683,6 +684,196 @@ public class SparseIndexingIT extends SparseBaseIT {
         assertEquals(2, getHitCount(searchResults));
         Set<String> actualIds = new HashSet<>(getDocIDs(searchResults));
         assertEquals(Set.of("1", "2"), actualIds);
+    }
+
+    /**
+     * Test creating an index with multiple seismic fields
+     */
+    public void testCreateIndexWithMultipleSeismicFields() throws IOException {
+        String indexName = TEST_INDEX_NAME + "_multiple_seismic";
+        String field1 = "sparse_field_1";
+        String field2 = "sparse_field_2";
+        String field3 = "sparse_field_3";
+
+        createIndexWithMultipleSeismicFields(indexName, List.of(field1, field2, field3));
+
+        // Verify index exists
+        assertTrue(indexExists(indexName));
+
+        // Verify index mapping contains all sparse fields
+        Map<String, Object> indexMapping = getIndexMapping(indexName);
+        Map<String, Object> mappings = (Map<String, Object>) indexMapping.get(indexName);
+        Map<String, Object> mappingsProperties = (Map<String, Object>) mappings.get("mappings");
+        Map<String, Object> properties = (Map<String, Object>) mappingsProperties.get("properties");
+
+        // Check each sparse field exists in mapping
+        assertTrue(properties.containsKey(field1));
+        assertTrue(properties.containsKey(field2));
+        assertTrue(properties.containsKey(field3));
+
+        // Verify field types are sparse_tokens
+        Map<String, Object> field1Config = (Map<String, Object>) properties.get(field1);
+        Map<String, Object> field2Config = (Map<String, Object>) properties.get(field2);
+        Map<String, Object> field3Config = (Map<String, Object>) properties.get(field3);
+
+        assertEquals(SparseTokensFieldMapper.CONTENT_TYPE, field1Config.get("type"));
+        assertEquals(SparseTokensFieldMapper.CONTENT_TYPE, field2Config.get("type"));
+        assertEquals(SparseTokensFieldMapper.CONTENT_TYPE, field3Config.get("type"));
+    }
+
+    /**
+     * Test indexing documents with multiple seismic fields
+     */
+    public void testIndexDocumentsWithMultipleSeismicFields() throws IOException {
+        String indexName = TEST_INDEX_NAME + "_multiple_seismic_docs";
+        String field1 = "sparse_field_1";
+        String field2 = "sparse_field_2";
+        String field3 = "sparse_field_3";
+
+        createIndexWithMultipleSeismicFields(indexName, List.of(field1, field2, field3));
+
+        // Create documents with different sparse tokens for each field using integer tokens
+        Map<String, Float> tokens1 = Map.of("1000", 0.1f, "2000", 0.2f);
+        Map<String, Float> tokens2 = Map.of("3000", 0.3f, "4000", 0.4f);
+        Map<String, Float> tokens3 = Map.of("5000", 0.5f, "6000", 0.6f);
+
+        // Index document with multiple sparse fields
+        addSparseEncodingDoc(indexName, "1", List.of(field1, field2, field3), List.of(tokens1, tokens2, tokens3));
+
+        // Verify document was indexed
+        assertEquals(1, getDocCount(indexName));
+
+        // Get the document and verify its content
+        Map<String, Object> document = getDocById(indexName, "1");
+        assertNotNull(document);
+
+        Map<String, Object> source = (Map<String, Object>) document.get("_source");
+        assertNotNull(source);
+
+        // Verify all sparse fields are present with correct tokens
+        Map<String, Object> sparseField1 = (Map<String, Object>) source.get(field1);
+        Map<String, Object> sparseField2 = (Map<String, Object>) source.get(field2);
+        Map<String, Object> sparseField3 = (Map<String, Object>) source.get(field3);
+
+        assertNotNull(sparseField1);
+        assertNotNull(sparseField2);
+        assertNotNull(sparseField3);
+
+        // Verify tokens in each field
+        assertEquals(0.1f, ((Number) sparseField1.get("1000")).floatValue(), 0.001);
+        assertEquals(0.2f, ((Number) sparseField1.get("2000")).floatValue(), 0.001);
+        assertEquals(0.3f, ((Number) sparseField2.get("3000")).floatValue(), 0.001);
+        assertEquals(0.4f, ((Number) sparseField2.get("4000")).floatValue(), 0.001);
+        assertEquals(0.5f, ((Number) sparseField3.get("5000")).floatValue(), 0.001);
+        assertEquals(0.6f, ((Number) sparseField3.get("6000")).floatValue(), 0.001);
+    }
+
+    /**
+     * Test searching across multiple seismic fields
+     */
+    public void testSearchMultipleSeismicFields() throws IOException {
+        String indexName = TEST_INDEX_NAME + "_multiple_seismic_search";
+        String field1 = "sparse_field_1";
+        String field2 = "sparse_field_2";
+
+        createIndexWithMultipleSeismicFields(indexName, List.of(field1, field2));
+
+        // Index multiple documents with different token distributions
+        addSparseEncodingDoc(
+            indexName,
+            "1",
+            List.of(field1, field2),
+            List.of(Map.of("1000", 0.8f, "2000", 0.2f), Map.of("3000", 0.1f, "4000", 0.9f))
+        );
+        addSparseEncodingDoc(
+            indexName,
+            "2",
+            List.of(field1, field2),
+            List.of(Map.of("1000", 0.3f, "2000", 0.7f), Map.of("3000", 0.6f, "4000", 0.4f))
+        );
+        addSparseEncodingDoc(
+            indexName,
+            "3",
+            List.of(field1, field2),
+            List.of(Map.of("1000", 0.1f, "5000", 0.9f), Map.of("6000", 0.8f, "4000", 0.2f))
+        );
+
+        // Search on first field
+        NeuralSparseQueryBuilder queryBuilder1 = getNeuralSparseQueryBuilder(field1, 2, 1.0f, 10, Map.of("1000", 0.5f, "2000", 0.5f));
+
+        Map<String, Object> searchResults1 = search(indexName, queryBuilder1, 10);
+        assertNotNull(searchResults1);
+        assertTrue(getHitCount(searchResults1) > 0);
+
+        // Search on second field
+        NeuralSparseQueryBuilder queryBuilder2 = getNeuralSparseQueryBuilder(field2, 2, 1.0f, 10, Map.of("3000", 0.5f, "4000", 0.5f));
+
+        Map<String, Object> searchResults2 = search(indexName, queryBuilder2, 10);
+        assertNotNull(searchResults2);
+        assertTrue(getHitCount(searchResults2) > 0);
+    }
+
+    /**
+     * Test multiple seismic fields with different parameters
+     */
+    public void testMultipleSeismicFieldsWithDifferentParameters() throws IOException {
+        String indexName = TEST_INDEX_NAME + "_multiple_seismic_params";
+
+        // Create index with multiple sparse fields having different seismic parameters
+        String indexSettings = prepareIndexSettings();
+        XContentBuilder mappingBuilder = XContentFactory.jsonBuilder()
+            .startObject()
+            .startObject("properties")
+            .startObject("sparse_field_high_precision")
+            .field("type", SparseTokensFieldMapper.CONTENT_TYPE)
+            .startObject("method")
+            .field("name", ALGO_NAME)
+            .startObject("parameters")
+            .field("n_postings", 200)
+            .field("summary_prune_ratio", 0.2f)
+            .field("cluster_ratio", 0.05f)
+            .field("approximate_threshold", 16)
+            .endObject()
+            .endObject()
+            .endObject()
+            .startObject("sparse_field_low_precision")
+            .field("type", SparseTokensFieldMapper.CONTENT_TYPE)
+            .startObject("method")
+            .field("name", ALGO_NAME)
+            .startObject("parameters")
+            .field("n_postings", 50)
+            .field("summary_prune_ratio", 0.6f)
+            .field("cluster_ratio", 0.2f)
+            .field("approximate_threshold", 4)
+            .endObject()
+            .endObject()
+            .endObject()
+            .endObject()
+            .endObject();
+
+        Request request = new Request("PUT", "/" + indexName);
+        String body = String.format(
+            Locale.ROOT,
+            "{\n" + "  \"settings\": %s,\n" + "  \"mappings\": %s\n" + "}",
+            indexSettings,
+            mappingBuilder.toString()
+        );
+        request.setJsonEntity(body);
+        Response response = client().performRequest(request);
+        assertEquals(RestStatus.OK, RestStatus.fromCode(response.getStatusLine().getStatusCode()));
+
+        // Verify index exists
+        assertTrue(indexExists(indexName));
+
+        // Index documents and verify they work with different precision settings
+        addSparseEncodingDoc(
+            indexName,
+            "1",
+            List.of("sparse_field_high_precision", "sparse_field_low_precision"),
+            List.of(Map.of("1000", 0.8f, "2000", 0.2f), Map.of("3000", 0.1f, "4000", 0.9f))
+        );
+
+        assertEquals(1, getDocCount(indexName));
     }
 
     private List<String> getDocIDs(Map<String, Object> searchResults) {

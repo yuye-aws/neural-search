@@ -251,6 +251,41 @@ public abstract class SparseBaseIT extends BaseNeuralSearchIT {
         );
     }
 
+    @SneakyThrows
+    protected void createIndexWithMultipleSeismicFields(String indexName, List<String> fieldNames) {
+        String indexSettings = prepareIndexSettings();
+        XContentBuilder mappingBuilder = XContentFactory.jsonBuilder().startObject().startObject("properties");
+
+        // Add each sparse field to the mapping
+        for (String fieldName : fieldNames) {
+            mappingBuilder.startObject(fieldName)
+                .field("type", SparseTokensFieldMapper.CONTENT_TYPE)
+                .startObject("method")
+                .field("name", ALGO_NAME)
+                .startObject("parameters")
+                .field("n_postings", 100)
+                .field("summary_prune_ratio", 0.4f)
+                .field("cluster_ratio", 0.1f)
+                .field("approximate_threshold", 8)
+                .endObject()
+                .endObject()
+                .endObject();
+        }
+
+        mappingBuilder.endObject().endObject();
+
+        Request request = new Request("PUT", "/" + indexName);
+        String body = String.format(
+            Locale.ROOT,
+            "{\n" + "  \"settings\": %s,\n" + "  \"mappings\": %s\n" + "}",
+            indexSettings,
+            mappingBuilder.toString()
+        );
+        request.setJsonEntity(body);
+        Response response = client().performRequest(request);
+        assertEquals(RestStatus.OK, RestStatus.fromCode(response.getStatusLine().getStatusCode()));
+    }
+
     protected void waitForSegmentMerge(String index) throws InterruptedException {
         waitForSegmentMerge(index, 1, 0);
     }
