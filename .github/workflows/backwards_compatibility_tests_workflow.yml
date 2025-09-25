@@ -77,10 +77,11 @@ jobs:
           rm -rf /usr/local/share/powershell || true
           rm -rf /usr/local/share/chromium || true
           rm -rf /opt/hostedtoolcache || true
-          apt-get clean
-          docker system prune -af --volumes
+          apt-get clean || true
+          docker system prune -af --volumes || true
           # Check space after cleanup
-          df -h
+          df -h || true
+          du -sh /* 2>/dev/null || true
 
       - name: Run NeuralSearch Restart-Upgrade BWC Tests from BWCVersion-${{ matrix.bwc_version }} to OpenSearch Version-${{ matrix.opensearch_version }} on ${{matrix.os}}
         run: |
