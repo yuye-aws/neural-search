@@ -48,11 +48,59 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
 
+      - name: Diagnose disk space before tests
+        run: |
+          echo "===== DISK SPACE INFORMATION BEFORE TESTS ====="
+          df -h
+          echo "===== TOP LEVEL DIRECTORIES ====="
+          du -sh /* 2>/dev/null || true
+          echo "===== WORKSPACE DIRECTORIES ====="
+          du -sh /__w/* 2>/dev/null || true
+          echo "===== HOME DIRECTORIES ====="
+          du -sh /home/* 2>/dev/null || true
+          echo "===== GRADLE CACHE ====="
+          du -sh ~/.gradle/* 2>/dev/null || true
+          echo "===== DJL CACHE ====="
+          du -sh ~/.djl.ai/* 2>/dev/null || true
+          echo "===== PYTORCH CACHE ====="
+          du -sh ~/.cache/torch/* 2>/dev/null || true
+
+      - name: Pre-test cleanup
+        run: |
+          echo "===== CLEANING UP BEFORE TESTS ====="
+          # Remove unnecessary large packages
+          rm -rf /usr/share/dotnet || true
+          rm -rf /usr/local/lib/android || true
+          rm -rf /opt/ghc || true
+          rm -rf /opt/hostedtoolcache || true
+          # Clean any previous test artifacts
+          rm -rf /__w/neural-search/neural-search/qa/restart-upgrade/build/testclusters || true
+          rm -rf ~/.djl.ai || true
+          rm -rf ~/.cache/torch || true
+          # Check space after cleanup
+          df -h
+
       - name: Run NeuralSearch Restart-Upgrade BWC Tests from BWCVersion-${{ matrix.bwc_version }} to OpenSearch Version-${{ matrix.opensearch_version }} on ${{matrix.os}}
         run: |
           chown -R 1000:1000 `pwd`
           echo "Running restart-upgrade backwards compatibility tests ..."
           su `id -un 1000` -c "./gradlew :qa:restart-upgrade:testAgainstNewCluster -D'tests.bwc.version=${{ matrix.bwc_version }}'"
+
+      - name: Diagnose disk space after tests (if failure)
+        if: failure()
+        run: |
+          echo "===== DISK SPACE INFORMATION AFTER TESTS ====="
+          df -h
+          echo "===== TEST DIRECTORIES ====="
+          du -sh /__w/neural-search/neural-search/qa/restart-upgrade/build/* 2>/dev/null || true
+          echo "===== TESTCLUSTERS DIRECTORIES ====="
+          du -sh /__w/neural-search/neural-search/qa/restart-upgrade/build/testclusters/* 2>/dev/null || true
+          echo "===== DJL CACHE AFTER TESTS ====="
+          du -sh ~/.djl.ai/* 2>/dev/null || true
+          echo "===== PYTORCH CACHE AFTER TESTS ====="
+          du -sh ~/.cache/torch/* 2>/dev/null || true
+          echo "===== TEMPORARY DIRECTORIES ====="
+          du -sh /tmp/* 2>/dev/null || true
 
   Rolling-Upgrade-BWCTests-NeuralSearch:
     needs: Get-CI-Image-Tag
@@ -87,8 +135,31 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
 
+      - name: Diagnose disk space before tests
+        run: |
+          echo "===== DISK SPACE INFORMATION BEFORE TESTS ====="
+          df -h
+          echo "===== TOP LEVEL DIRECTORIES ====="
+          du -sh /* 2>/dev/null || true
+          echo "===== WORKSPACE DIRECTORIES ====="
+          du -sh /__w/* 2>/dev/null || true
+
       - name: Run NeuralSearch Rolling-Upgrade BWC Tests from BWCVersion-${{ matrix.bwc_version }} to OpenSearch Version-${{ matrix.opensearch_version }} on ${{matrix.os}}
         run: |
           chown -R 1000:1000 `pwd`
           echo "Running rolling-upgrade backwards compatibility tests ..."
           su `id -un 1000` -c "./gradlew :qa:rolling-upgrade:testRollingUpgrade -D'tests.bwc.version=${{ matrix.bwc_version }}'"
+
+      - name: Diagnose disk space after tests (if failure)
+        if: failure()
+        run: |
+          echo "===== DISK SPACE INFORMATION AFTER TESTS ====="
+          df -h
+          echo "===== TEST DIRECTORIES ====="
+          du -sh /__w/neural-search/neural-search/qa/rolling-upgrade/build/* 2>/dev/null || true
+          echo "===== TESTCLUSTERS DIRECTORIES ====="
+          du -sh /__w/neural-search/neural-search/qa/rolling-upgrade/build/testclusters/* 2>/dev/null || true
+          echo "===== DJL CACHE AFTER TESTS ====="
+          du -sh ~/.djl.ai/* 2>/dev/null || true
+          echo "===== PYTORCH CACHE AFTER TESTS ====="
+          du -sh ~/.cache/torch/* 2>/dev/null || true
