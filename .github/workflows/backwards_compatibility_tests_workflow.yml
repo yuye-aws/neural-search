@@ -87,7 +87,6 @@ jobs:
           su `id -un 1000` -c "./gradlew :qa:restart-upgrade:testAgainstNewCluster -D'tests.bwc.version=${{ matrix.bwc_version }}'"
 
       - name: Diagnose disk space after tests (if failure)
-        if: failure()
         run: |
           echo "===== DISK SPACE INFORMATION AFTER TESTS ====="
           df -h
@@ -139,7 +138,9 @@ jobs:
         run: |
           echo "===== DISK SPACE INFORMATION BEFORE TESTS ====="
           df -h
-          echo "===== TOP LEVEL DIRECTORIES ====="
+          echo "===== TOP LEVEL DIRECTORIES 1 ====="
+          du -h --max-depth=1 2>/dev/null || true
+          echo "===== TOP LEVEL DIRECTORIES 2 ====="
           du -sh /* 2>/dev/null || true
           echo "===== WORKSPACE DIRECTORIES ====="
           du -sh /__w/* 2>/dev/null || true
@@ -151,7 +152,6 @@ jobs:
           su `id -un 1000` -c "./gradlew :qa:rolling-upgrade:testRollingUpgrade -D'tests.bwc.version=${{ matrix.bwc_version }}'"
 
       - name: Diagnose disk space after tests (if failure)
-        if: failure()
         run: |
           echo "===== DISK SPACE INFORMATION AFTER TESTS ====="
           df -h
