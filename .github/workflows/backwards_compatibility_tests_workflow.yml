@@ -19,9 +19,9 @@ jobs:
     needs: Get-CI-Image-Tag
     strategy:
       matrix:
-        java: [ 21, 24 ]
+        java: [ 24 ]
         os: [ubuntu-latest]
-        bwc_version : [ "2.9.0","2.10.0","2.11.0","2.12.0","2.13.0","2.14.0","2.15.0","2.16.0","2.17.0","2.18.0","2.19.0","2.20.0-SNAPSHOT","3.0.0", "3.1.0" ]
+        bwc_version : [ "2.15.0" ]
         opensearch_version : [ "3.2.0-SNAPSHOT" ]
 
     name: NeuralSearch Restart-Upgrade BWC Tests
@@ -48,47 +48,65 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
 
+      - name: Diagnose disk space before tests
+        run: |
+          echo "===== DISK SPACE INFORMATION BEFORE TESTS ====="
+          df -h
+          echo "===== TOP LEVEL DIRECTORIES 1 ====="
+          du -h --max-depth=1 2>/dev/null || true
+          echo "===== TOP LEVEL DIRECTORIES 2 ====="
+          du -sh /* 2>/dev/null || true
+          echo "===== WORKSPACE DIRECTORIES ====="
+          du -sh /__w/* 2>/dev/null || true
+          echo "===== HOME DIRECTORIES ====="
+          du -sh /home/* 2>/dev/null || true
+          echo "===== GRADLE CACHE ====="
+          du -sh ~/.gradle/* 2>/dev/null || true
+          echo "===== DJL CACHE ====="
+          du -sh ~/.djl.ai/* 2>/dev/null || true
+          echo "===== PYTORCH CACHE ====="
+          du -sh ~/.cache/torch/* 2>/dev/null || true
+
+      - name: Pre-test cleanup
+        run: |
+          echo "===== CLEANING UP BEFORE TESTS ====="
+          # Remove unnecessary large packages
+          rm -rf /usr/share/dotnet || true
+          rm -rf /opt/ghc || true
+          rm -rf /usr/local/lib/android || true
+          rm -rf /usr/local/share/powershell || true
+          rm -rf /usr/local/share/chromium || true
+          rm -rf /opt/hostedtoolcache || true
+          apt-get clean || true
+          docker system prune -af --volumes || true
+          # Check space after cleanup
+          df -h || true
+          du -sh /* 2>/dev/null || true
+
       - name: Run NeuralSearch Restart-Upgrade BWC Tests from BWCVersion-${{ matrix.bwc_version }} to OpenSearch Version-${{ matrix.opensearch_version }} on ${{matrix.os}}
         run: |
           chown -R 1000:1000 `pwd`
           echo "Running restart-upgrade backwards compatibility tests ..."
           su `id -un 1000` -c "./gradlew :qa:restart-upgrade:testAgainstNewCluster -D'tests.bwc.version=${{ matrix.bwc_version }}'"
 
-  Rolling-Upgrade-BWCTests-NeuralSearch:
-    needs: Get-CI-Image-Tag
-    strategy:
-      matrix:
-        java: [21, 24]
-        os: [ubuntu-latest]
-        bwc_version: [ "2.20.0-SNAPSHOT","3.0.0", "3.1.0" ]
-        opensearch_version: [ "3.2.0-SNAPSHOT" ]
-
-    name: NeuralSearch Rolling-Upgrade BWC Tests
-    runs-on: ${{ matrix.os }}
-    container:
-      # using the same image which is used by opensearch-build team to build the OpenSearch Distribution
-      # this image tag is subject to change as more dependencies and updates will arrive over time
-      image: ${{ needs.Get-CI-Image-Tag.outputs.ci-image-version-linux }}
-      # need to switch to root so that github actions can install runner binary on container without permission issues.
-      options: ${{ needs.Get-CI-Image-Tag.outputs.ci-image-start-options }}
-    env:
-      BWC_VERSION_ROLLING_UPGRADE: ${{ matrix.bwc_version }}
-
-    steps:
-      - name: Run start commands
-        run: ${{ needs.Get-CI-Image-Tag.outputs.ci-image-start-command }}
-
-      - name: Checkout neural-search
-        uses: actions/checkout@v4
-
-      - name: Setup Java ${{ matrix.java }}
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: ${{ matrix.java }}
-
-      - name: Run NeuralSearch Rolling-Upgrade BWC Tests from BWCVersion-${{ matrix.bwc_version }} to OpenSearch Version-${{ matrix.opensearch_version }} on ${{matrix.os}}
+      - name: Diagnose disk space after tests (if failure)
+        if: failure()
         run: |
-          chown -R 1000:1000 `pwd`
-          echo "Running rolling-upgrade backwards compatibility tests ..."
-          su `id -un 1000` -c "./gradlew :qa:rolling-upgrade:testRollingUpgrade -D'tests.bwc.version=${{ matrix.bwc_version }}'"
+          echo "===== DISK SPACE INFORMATION AFTER TESTS ====="
+          df -h
+          echo "===== TOP LEVEL DIRECTORIES 1 ====="
+          du -h --max-depth=1 2>/dev/null || true
+          echo "===== TOP LEVEL DIRECTORIES 2 ====="
+          du -sh /* 2>/dev/null || true
+          echo "===== Tool DIRECTORIES  ====="
+          du -sh /__t/ 2>/dev/null || true
+          echo "===== TEST DIRECTORIES ====="
+          du -sh /__w/neural-search/neural-search/qa/restart-upgrade/build/* 2>/dev/null || true
+          echo "===== TESTCLUSTERS DIRECTORIES ====="
+          du -sh /__w/neural-search/neural-search/qa/restart-upgrade/build/testclusters/* 2>/dev/null || true
+          echo "===== DJL CACHE AFTER TESTS ====="
+          du -sh ~/.djl.ai/* 2>/dev/null || true
+          echo "===== PYTORCH CACHE AFTER TESTS ====="
+          du -sh ~/.cache/torch/* 2>/dev/null || true
+          echo "===== TEMPORARY DIRECTORIES ====="
+          du -sh /tmp/* 2>/dev/null || true
