@@ -409,13 +409,6 @@ integTest {
 testClusters.integTest {
     testDistribution = "ARCHIVE"
 
-    // Add custom opensearch.yml configuration
-    // Use sparse-disabled config if specified, otherwise use default config
-    def configFile = System.getProperty("opensearch.config", "config/opensearch.yml")
-    if (file(configFile).exists()) {
-        extraConfigFile("opensearch.yml", file(configFile))
-    }
-
     // Set sparse ANN feature flag based on system property
     boolean sparseAnnEnabled = Boolean.parseBoolean(System.getProperty('sparse.ann.enabled', 'true'))
     setting("plugins.neural_search.sparse.ann.enabled", sparseAnnEnabled.toString())

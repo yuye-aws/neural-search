@@ -24,6 +24,9 @@ public class NeuralSearchSettingsAccessor {
     private volatile boolean isStatsEnabled;
 
     @Getter
+    private final boolean isSparseAnnEnabled;
+
+    @Getter
     private volatile boolean isAgenticSearchEnabled;
 
     /**
@@ -33,6 +36,7 @@ public class NeuralSearchSettingsAccessor {
      */
     public NeuralSearchSettingsAccessor(ClusterService clusterService, Settings settings) {
         isStatsEnabled = NeuralSearchSettings.NEURAL_STATS_ENABLED.get(settings);
+        isSparseAnnEnabled = NeuralSearchSettings.SPARSE_ANN_FEATURE_ENABLED.get(settings);
         registerSettingsCallbacks(clusterService, settings);
     }
 
@@ -46,7 +50,7 @@ public class NeuralSearchSettingsAccessor {
         });
 
         // Only register sparse-related settings callback if sparse ANN feature is enabled
-        if (NeuralSearchSettings.SPARSE_ANN_FEATURE_ENABLED.get(settings)) {
+        if (isSparseAnnEnabled) {
             clusterService.getClusterSettings()
                 .addSettingsUpdateConsumer(NEURAL_CIRCUIT_BREAKER_LIMIT, NEURAL_CIRCUIT_BREAKER_OVERHEAD, (limit, overhead) -> {
                     CircuitBreakerManager.setLimitAndOverhead(limit, overhead);

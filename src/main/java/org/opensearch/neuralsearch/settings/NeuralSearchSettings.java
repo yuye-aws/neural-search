@@ -121,7 +121,7 @@ public final class NeuralSearchSettings {
      */
     public static final Setting<Boolean> SPARSE_ANN_FEATURE_ENABLED = Setting.boolSetting(
         "plugins.neural_search.sparse.ann.enabled",
-        true,
+        false,
         Setting.Property.NodeScope
     );
 }

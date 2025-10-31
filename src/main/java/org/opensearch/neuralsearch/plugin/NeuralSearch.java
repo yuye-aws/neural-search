@@ -170,7 +170,6 @@ import static org.opensearch.neuralsearch.settings.NeuralSearchSettings.DEFAULT_
 import static org.opensearch.neuralsearch.settings.NeuralSearchSettings.NEURAL_CIRCUIT_BREAKER_LIMIT;
 import static org.opensearch.neuralsearch.settings.NeuralSearchSettings.NEURAL_CIRCUIT_BREAKER_NAME;
 import static org.opensearch.neuralsearch.settings.NeuralSearchSettings.NEURAL_CIRCUIT_BREAKER_OVERHEAD;
-import static org.opensearch.neuralsearch.settings.NeuralSearchSettings.SPARSE_ANN_FEATURE_ENABLED;
 
 /**
  * Neural Search plugin class
@@ -193,7 +192,6 @@ public class NeuralSearch extends Plugin
     private PipelineServiceUtil pipelineServiceUtil;
     private InfoStatsManager infoStatsManager;
     private ClusterService clusterService;
-    private Settings nodeSettings;
     private final SemanticHighlighter semanticHighlighter;
     private final ScoreNormalizationFactory scoreNormalizationFactory = new ScoreNormalizationFactory();
     private final ScoreCombinationFactory scoreCombinationFactory = new ScoreCombinationFactory();
@@ -219,7 +217,6 @@ public class NeuralSearch extends Plugin
         final Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
         this.clusterService = clusterService;
-        this.nodeSettings = environment.settings();
         // Create clientAccessor first as it's needed by other components
         clientAccessor = new MLCommonsClientAccessor(new MachineLearningNodeClient(client));
 
@@ -310,8 +307,7 @@ public class NeuralSearch extends Plugin
     public Map<String, Processor.Factory> getProcessors(Processor.Parameters parameters) {
         // clientAccessor is already initialized in createComponents
         if (clientAccessor == null) {
-            // Fallback initialization if createComponents wasn't called (e.g., in some test
-            // scenarios)
+            // Fallback initialization if createComponents wasn't called (e.g., in some test scenarios)
             clientAccessor = new MLCommonsClientAccessor(new MachineLearningNodeClient(parameters.client));
         }
         return Map.of(
@@ -372,8 +368,7 @@ public class NeuralSearch extends Plugin
             )
         );
 
-        // Only include sparse-related settings if sparse ANN feature is enabled
-        if (nodeSettings != null && SPARSE_ANN_FEATURE_ENABLED.get(nodeSettings)) {
+        if (settingsAccessor.isSparseAnnEnabled()) {
             settings.add(SparseSettings.IS_SPARSE_INDEX_SETTING);
             settings.add(NeuralSearchSettings.SPARSE_ALGO_PARAM_INDEX_THREAD_QTY_SETTING);
         }
@@ -422,8 +417,7 @@ public class NeuralSearch extends Plugin
     public Map<String, SystemGeneratedProcessor.SystemGeneratedFactory<SearchResponseProcessor>> getSystemGeneratedResponseProcessors(
         Parameters parameters
     ) {
-        // System-generated semantic highlighting processor that automatically applies
-        // when semantic highlighting is detected
+        // System-generated semantic highlighting processor that automatically applies when semantic highlighting is detected
         return Map.of(SemanticHighlightingConstants.SYSTEM_FACTORY_TYPE, new SemanticHighlightingFactory(clientAccessor));
     }
 
@@ -444,19 +438,15 @@ public class NeuralSearch extends Plugin
     @Override
     public Optional<CodecServiceFactory> getCustomCodecServiceFactory(IndexSettings indexSettings) {
         // Check if sparse ANN feature is enabled in node settings
-        if (nodeSettings != null && !SPARSE_ANN_FEATURE_ENABLED.get(nodeSettings)) {
+        if (settingsAccessor.isSparseAnnEnabled() || !indexSettings.getValue(SparseSettings.IS_SPARSE_INDEX_SETTING)) {
             return Optional.empty();
-        }
-
-        if (indexSettings.getValue(SparseSettings.IS_SPARSE_INDEX_SETTING)) {
+        } else {
             return Optional.of(SparseCodecService::new);
         }
-        return Optional.empty();
     }
 
     /**
-     * Register hybrid semantic highlighter that supports both batch and non-batch
-     * modes
+     * Register hybrid semantic highlighter that supports both batch and non-batch modes
      * - Batch mode: Requires system processor to be explicitly enabled
      * - Non-batch mode: Uses legacy highlighting for backward compatibility
      */
@@ -467,8 +457,7 @@ public class NeuralSearch extends Plugin
 
     @Override
     public Map<String, Mapper.TypeParser> getMappers() {
-        // Only include sparse vector mapper if sparse ANN feature is enabled
-        if (nodeSettings != null && SPARSE_ANN_FEATURE_ENABLED.get(nodeSettings)) {
+        if (settingsAccessor.isSparseAnnEnabled()) {
             return Map.of(
                 SemanticFieldMapper.CONTENT_TYPE,
                 new SemanticFieldMapper.TypeParser(),
@@ -500,10 +489,7 @@ public class NeuralSearch extends Plugin
     }
 
     public void onIndexModule(IndexModule indexModule) {
-        // Only add sparse index event listener if sparse ANN feature is enabled
-        if (nodeSettings != null
-            && SPARSE_ANN_FEATURE_ENABLED.get(nodeSettings)
-            && SparseSettings.IS_SPARSE_INDEX_SETTING.get(indexModule.getSettings())) {
+        if (settingsAccessor.isSparseAnnEnabled() && SparseSettings.IS_SPARSE_INDEX_SETTING.get(indexModule.getSettings())) {
             indexModule.addIndexEventListener(new SparseIndexEventListener());
         }
     }
