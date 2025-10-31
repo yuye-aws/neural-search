@@ -334,6 +334,15 @@ test {
     include '**/*Tests.class'
     systemProperty 'tests.security.manager', 'false'
     systemProperty "jdk.attach.allowAttachSelf", true
+
+    // Conditionally exclude sparse ANN tests based on feature flag
+    boolean sparseAnnEnabled = Boolean.parseBoolean(System.getProperty('sparse_ann.enabled', 'true'))
+    if (!sparseAnnEnabled) {
+        filter {
+            excludeTestsMatching "org.opensearch.neuralsearch.sparse.*Tests"
+            excludeTestsMatching "org.opensearch.neuralsearch.sparse.*.*Tests"
+        }
+    }
 }
 
 // Setting up Integration Tests
@@ -342,9 +351,17 @@ task integTest(type: RestIntegTestTask) {
     testClassesDirs = sourceSets.test.output.classesDirs
     classpath = sourceSets.test.runtimeClasspath
     boolean runCompleteAggsTestSuite = Boolean.parseBoolean(System.getProperty('test_aggs', "false"))
-    if (!runCompleteAggsTestSuite) {
-        filter {
+    boolean sparseAnnEnabled = Boolean.parseBoolean(System.getProperty('sparse_ann.enabled', 'true'))
+
+    filter {
+        if (!runCompleteAggsTestSuite) {
             excludeTestsMatching "org.opensearch.neuralsearch.query.aggregation.*IT"
+        }
+
+        // Conditionally exclude sparse ANN integration tests based on feature flag
+        if (!sparseAnnEnabled) {
+            excludeTestsMatching "org.opensearch.neuralsearch.sparse.*IT"
+            excludeTestsMatching "org.opensearch.neuralsearch.sparse.*.*IT"
         }
     }
 }
@@ -391,6 +408,17 @@ integTest {
 
 testClusters.integTest {
     testDistribution = "ARCHIVE"
+
+    // Add custom opensearch.yml configuration
+    // Use sparse-disabled config if specified, otherwise use default config
+    def configFile = System.getProperty("opensearch.config", "config/opensearch.yml")
+    if (file(configFile).exists()) {
+        extraConfigFile("opensearch.yml", file(configFile))
+    }
+
+    // Set sparse ANN feature flag based on system property
+    boolean sparseAnnEnabled = Boolean.parseBoolean(System.getProperty('sparse.ann.enabled', 'true'))
+    setting("plugins.neural_search.sparse.ann.enabled", sparseAnnEnabled.toString())
 
     // Optionally install security
     if (System.getProperty("security.enabled") != null && System.getProperty("security.enabled") == "true") {
