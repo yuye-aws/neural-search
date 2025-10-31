@@ -117,11 +117,10 @@ public final class NeuralSearchSettings {
      * Feature flag to enable or disable sparse ANN functionality.
      * When disabled, sparse ANN features including index mapping, codec service, and index settings will be unavailable.
      * This is a static setting that must be configured in opensearch.yml and requires a node restart to change.
-     * Default is true to maintain backward compatibility.
      */
     public static final Setting<Boolean> SPARSE_ANN_FEATURE_ENABLED = Setting.boolSetting(
         "plugins.neural_search.sparse.ann.enabled",
-        false,
+        true,
         Setting.Property.NodeScope
     );
 }
