@@ -360,18 +360,15 @@ public class NeuralSearch extends Plugin
 
     @Override
     public List<Setting<?>> getSettings() {
-        List<Setting<?>> settings = new ArrayList<>();
-
         // Always include core neural search settings
-        settings.addAll(
+        List<Setting<?>> settings = new ArrayList<>(
             List.of(
                 RERANKER_MAX_DOC_FIELDS,
                 NEURAL_STATS_ENABLED,
                 SEMANTIC_INGEST_BATCH_SIZE,
                 HYBRID_COLLAPSE_DOCS_PER_GROUP_PER_SUBQUERY,
                 NEURAL_CIRCUIT_BREAKER_LIMIT,
-                NEURAL_CIRCUIT_BREAKER_OVERHEAD,
-                SPARSE_ANN_FEATURE_ENABLED
+                NEURAL_CIRCUIT_BREAKER_OVERHEAD
             )
         );
 

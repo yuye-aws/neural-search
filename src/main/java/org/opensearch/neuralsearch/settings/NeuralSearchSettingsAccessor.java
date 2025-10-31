@@ -44,15 +44,19 @@ public class NeuralSearchSettingsAccessor {
             }
             isStatsEnabled = value;
         });
-        clusterService.getClusterSettings()
-            .addSettingsUpdateConsumer(NEURAL_CIRCUIT_BREAKER_LIMIT, NEURAL_CIRCUIT_BREAKER_OVERHEAD, (limit, overhead) -> {
-                CircuitBreakerManager.setLimitAndOverhead(limit, overhead);
-                MemoryUsageManager.getInstance().setLimitAndOverhead(limit, overhead);
-            });
-        clusterService.getClusterSettings()
-            .addSettingsUpdateConsumer(NeuralSearchSettings.SPARSE_ALGO_PARAM_INDEX_THREAD_QTY_SETTING, (setting) -> {
-                int maxThreadQty = OpenSearchExecutors.allocatedProcessors(settings);
-                ClusterTrainingExecutor.updateThreadPoolSize(maxThreadQty, setting);
-            });
+
+        // Only register sparse-related settings callback if sparse ANN feature is enabled
+        if (NeuralSearchSettings.SPARSE_ANN_FEATURE_ENABLED.get(settings)) {
+            clusterService.getClusterSettings()
+                .addSettingsUpdateConsumer(NEURAL_CIRCUIT_BREAKER_LIMIT, NEURAL_CIRCUIT_BREAKER_OVERHEAD, (limit, overhead) -> {
+                    CircuitBreakerManager.setLimitAndOverhead(limit, overhead);
+                    MemoryUsageManager.getInstance().setLimitAndOverhead(limit, overhead);
+                });
+            clusterService.getClusterSettings()
+                .addSettingsUpdateConsumer(NeuralSearchSettings.SPARSE_ALGO_PARAM_INDEX_THREAD_QTY_SETTING, (setting) -> {
+                    int maxThreadQty = OpenSearchExecutors.allocatedProcessors(settings);
+                    ClusterTrainingExecutor.updateThreadPoolSize(maxThreadQty, setting);
+                });
+        }
     }
 }
