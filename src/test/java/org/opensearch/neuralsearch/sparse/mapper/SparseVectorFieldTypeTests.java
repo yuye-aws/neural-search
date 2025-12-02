@@ -21,7 +21,11 @@ import static org.opensearch.neuralsearch.sparse.common.SparseConstants.N_POSTIN
 import static org.opensearch.neuralsearch.sparse.common.SparseConstants.PARAMETERS_FIELD;
 import static org.opensearch.neuralsearch.sparse.common.SparseConstants.SEISMIC;
 import static org.opensearch.neuralsearch.sparse.common.SparseConstants.SUMMARY_PRUNE_RATIO_FIELD;
+<<<<<<< HEAD:src/test/java/org/opensearch/neuralsearch/sparse/mapper/SparseVectorFieldTypeTests.java
 import static org.opensearch.neuralsearch.sparse.mapper.SparseVectorFieldMapper.CONTENT_TYPE;
+=======
+import static org.opensearch.neuralsearch.sparse.mapper.SparseTokensFieldMapper.CONTENT_TYPE;
+>>>>>>> 6f499f5b (Fix two phase and seismic):src/test/java/org/opensearch/neuralsearch/sparse/mapper/SparseTokensFieldTypeTests.java
 
 public class SparseVectorFieldTypeTests extends AbstractSparseTestBase {
     private SparseVectorFieldType fieldType;
@@ -129,11 +133,20 @@ public class SparseVectorFieldTypeTests extends AbstractSparseTestBase {
         assertFalse(fieldType.hasDocValues()); // Our hasDocValues parameter
     }
 
+<<<<<<< HEAD:src/test/java/org/opensearch/neuralsearch/sparse/mapper/SparseVectorFieldTypeTests.java
     public void test_isSparseVectorType_returnsTrue_withSparseVectorType() {
         assertTrue(SparseVectorFieldType.isSparseVectorType(CONTENT_TYPE));
     }
 
     public void test_isSparseVectorType_returnsFalse_withNonSparseVectorType() {
         assertFalse(SparseVectorFieldType.isSparseVectorType("non_sparse_vector"));
+=======
+    public void test_isSparseTokensType_returnsTrue_withSparseTokensType() {
+        assertTrue(SparseTokensFieldType.isSparseTokensType(CONTENT_TYPE));
+    }
+
+    public void test_isSparseTokensType_returnsFalse_withNonSparseTokensType() {
+        assertFalse(SparseTokensFieldType.isSparseTokensType("non_sparse_tokens"));
+>>>>>>> 6f499f5b (Fix two phase and seismic):src/test/java/org/opensearch/neuralsearch/sparse/mapper/SparseTokensFieldTypeTests.java
     }
 }

@@ -5,15 +5,25 @@
 package org.opensearch.neuralsearch.processor;
 
 import lombok.SneakyThrows;
+<<<<<<< HEAD
 import org.junit.Before;
+=======
+import org.junit.After;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+>>>>>>> 6f499f5b (Fix two phase and seismic)
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.MatchAllQueryBuilder;
 import org.opensearch.neuralsearch.query.NeuralQueryBuilder;
 import org.opensearch.neuralsearch.query.NeuralSparseQueryBuilder;
+<<<<<<< HEAD
 import org.opensearch.neuralsearch.sparse.TestsPrepareUtils;
 import org.opensearch.neuralsearch.util.TestUtils;
+=======
+import org.opensearch.neuralsearch.sparse.common.SparseFieldUtils;
+>>>>>>> 6f499f5b (Fix two phase and seismic)
 import org.opensearch.neuralsearch.util.prune.PruneType;
 import org.opensearch.neuralsearch.util.prune.PruneUtils;
 import org.opensearch.search.builder.SearchSourceBuilder;
@@ -22,9 +32,16 @@ import org.opensearch.test.OpenSearchTestCase;
 
 import java.util.Collections;
 import java.util.HashMap;
+<<<<<<< HEAD
 import java.util.List;
+=======
+>>>>>>> 6f499f5b (Fix two phase and seismic)
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.opensearch.neuralsearch.sparse.common.SparseConstants.SEISMIC;
 
 import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -41,6 +58,7 @@ public class NeuralSparseTwoPhaseProcessorTests extends OpenSearchTestCase {
     private static final String TEST_INDEX_NAME = "test_index";
     private static final String TEST_SPARSE_FIELD_NAME = "test_sparse_field";
 
+<<<<<<< HEAD
     private ClusterService mockClusterService;
 
     @Override
@@ -50,6 +68,23 @@ public class NeuralSparseTwoPhaseProcessorTests extends OpenSearchTestCase {
         mockClusterService = mock(ClusterService.class);
         TestsPrepareUtils.prepareSparseFieldUtilsClusterServiceMock(mockClusterService, Collections.emptyList(), null);
         TestUtils.initializeEventStatsManager();
+=======
+    private MockedStatic<SparseFieldUtils> sparseFieldUtilsMock;
+
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        sparseFieldUtilsMock = Mockito.mockStatic(SparseFieldUtils.class);
+    }
+
+    @After
+    @Override
+    public void tearDown() throws Exception {
+        if (sparseFieldUtilsMock != null) {
+            sparseFieldUtilsMock.close();
+        }
+        super.tearDown();
+>>>>>>> 6f499f5b (Fix two phase and seismic)
     }
 
     public void testFactory_whenCreateDefaultPipeline_thenSuccess() throws Exception {
@@ -264,6 +299,11 @@ public class NeuralSparseTwoPhaseProcessorTests extends OpenSearchTestCase {
 
     public void testValidateSeismicQuery_whenNonSeismicField_thenSuccess() throws Exception {
         // Setup mock cluster service with non-seismic field
+<<<<<<< HEAD
+=======
+        configureSparseFieldUtils(Set.of());
+
+>>>>>>> 6f499f5b (Fix two phase and seismic)
         NeuralSparseTwoPhaseProcessor.Factory factory = new NeuralSparseTwoPhaseProcessor.Factory();
         NeuralSparseQueryBuilder neuralQueryBuilder = new NeuralSparseQueryBuilder();
         neuralQueryBuilder.fieldName(TEST_SPARSE_FIELD_NAME);
@@ -278,12 +318,20 @@ public class NeuralSparseTwoPhaseProcessorTests extends OpenSearchTestCase {
         SearchRequest processedRequest = processor.processRequest(searchRequest);
         assertNotNull(processedRequest);
         NeuralSparseQueryBuilder queryBuilder = (NeuralSparseQueryBuilder) processedRequest.source().query();
+<<<<<<< HEAD
         assertEquals(queryBuilder.getNeuralSparseQueryTwoPhaseInfo().getTwoPhasePruneRatio(), 0.5f, 1e-3);
+=======
+        assertEquals(queryBuilder.twoPhasePruneRatio(), 0.5f, 1e-3);
+>>>>>>> 6f499f5b (Fix two phase and seismic)
         assertNotNull(processedRequest.source().rescores());
     }
 
     public void testValidateSeismicQuery_whenSeismicField_thenThrowException() throws Exception {
         // Setup mock cluster service with seismic field
+<<<<<<< HEAD
+=======
+        configureSparseFieldUtils(Set.of(TEST_SPARSE_FIELD_NAME));
+>>>>>>> 6f499f5b (Fix two phase and seismic)
 
         NeuralSparseTwoPhaseProcessor.Factory factory = new NeuralSparseTwoPhaseProcessor.Factory();
         NeuralSparseQueryBuilder neuralQueryBuilder = new NeuralSparseQueryBuilder();
@@ -297,7 +345,10 @@ public class NeuralSparseTwoPhaseProcessorTests extends OpenSearchTestCase {
         searchRequest.source(new SearchSourceBuilder().query(boolQueryBuilder));
 
         NeuralSparseTwoPhaseProcessor processor = createTestProcessor(factory, 0.5f, true, 4.0f, 10000);
+<<<<<<< HEAD
         configureSparseFieldUtils(processor, List.of(TEST_SPARSE_FIELD_NAME));
+=======
+>>>>>>> 6f499f5b (Fix two phase and seismic)
 
         Exception exception = expectThrows(IllegalArgumentException.class, () -> processor.processRequest(searchRequest));
 
@@ -307,9 +358,14 @@ public class NeuralSparseTwoPhaseProcessorTests extends OpenSearchTestCase {
         );
     }
 
+<<<<<<< HEAD
     private void configureSparseFieldUtils(NeuralSparseTwoPhaseProcessor processor, List<String> seismicFields) {
         TestsPrepareUtils.prepareSparseFieldUtilsClusterServiceMock(mockClusterService, seismicFields, null);
         processor.setClusterService(mockClusterService);
+=======
+    private void configureSparseFieldUtils(Set<String> seismicFields) {
+        sparseFieldUtilsMock.when(() -> SparseFieldUtils.getSparseAnnFields(anyString())).thenReturn(seismicFields);
+>>>>>>> 6f499f5b (Fix two phase and seismic)
     }
 
     private NeuralSparseTwoPhaseProcessor createTestProcessor(

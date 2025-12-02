@@ -63,7 +63,12 @@ public class SparseVectorFieldType extends MappedFieldType {
         );
     }
 
+<<<<<<< HEAD:src/main/java/org/opensearch/neuralsearch/sparse/mapper/SparseVectorFieldType.java
     public static boolean isSparseVectorType(String type) {
         return SparseVectorFieldMapper.CONTENT_TYPE.equals(type);
+=======
+    public static boolean isSparseTokensType(String type) {
+        return SparseTokensFieldMapper.CONTENT_TYPE.equals(type);
+>>>>>>> 6f499f5b (Fix two phase and seismic):src/main/java/org/opensearch/neuralsearch/sparse/mapper/SparseTokensFieldType.java
     }
 }

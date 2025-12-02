@@ -4,6 +4,13 @@
  */
 package org.opensearch.neuralsearch.util;
 
+<<<<<<< HEAD
+=======
+import lombok.Getter;
+import org.opensearch.Version;
+import org.opensearch.cluster.service.ClusterService;
+
+>>>>>>> 6f499f5b (Fix two phase and seismic)
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -29,13 +36,19 @@ import java.util.stream.Collectors;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Log4j2
 public class NeuralSearchClusterUtil {
+<<<<<<< HEAD
     @Getter
     private ClusterService clusterService;
     private IndexNameExpressionResolver indexNameExpressionResolver;
     @Setter
     private SearchPipelineService searchPipelineService;
+=======
+>>>>>>> 6f499f5b (Fix two phase and seismic)
 
     private static NeuralSearchClusterUtil instance;
+
+    @Getter
+    private ClusterService clusterService;
 
     /**
      * Return instance of the cluster context, must be initialized first for proper usage
@@ -68,6 +81,7 @@ public class NeuralSearchClusterUtil {
     public Version getClusterMinVersion() {
         return this.clusterService.state().getNodes().getMinNodeVersion();
     }
+<<<<<<< HEAD
 
     public List<IndexMetadata> getIndexMetadataList(@NonNull final IndicesRequest searchRequest) {
         final Index[] concreteIndices = this.indexNameExpressionResolver.concreteIndices(clusterService.state(), searchRequest);
@@ -105,4 +119,6 @@ public class NeuralSearchClusterUtil {
         }
         return searchPipelineService.isSystemGeneratedFactoryEnabled(factoryName);
     }
+=======
+>>>>>>> 6f499f5b (Fix two phase and seismic)
 }

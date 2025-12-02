@@ -52,6 +52,7 @@ public class NeuralSearchClusterUtilTests extends OpenSearchTestCase {
         assertTrue(Version.V_2_3_0.equals(minVersion));
     }
 
+<<<<<<< HEAD
     public void testGetIndexMetadataList() {
         final ClusterService clusterService = mock(ClusterService.class);
         final ClusterState clusterState = mock(ClusterState.class);
@@ -155,6 +156,13 @@ public class NeuralSearchClusterUtilTests extends OpenSearchTestCase {
         final IndexNameExpressionResolver indexNameExpressionResolver = new IndexNameExpressionResolver(new ThreadContext(Settings.EMPTY));
         final NeuralSearchClusterUtil neuralSearchClusterUtil = NeuralSearchClusterUtil.instance();
         neuralSearchClusterUtil.initialize(clusterService, indexNameExpressionResolver);
+=======
+    public void testGetClusterService_thenSuccess() {
+        ClusterService clusterService = mockClusterService(Version.V_2_3_0);
+
+        final NeuralSearchClusterUtil neuralSearchClusterUtil = NeuralSearchClusterUtil.instance();
+        neuralSearchClusterUtil.initialize(clusterService);
+>>>>>>> 6f499f5b (Fix two phase and seismic)
 
         assertSame(clusterService, neuralSearchClusterUtil.getClusterService());
     }

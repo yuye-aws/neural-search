@@ -9,7 +9,11 @@ import com.google.common.collect.Multimap;
 import lombok.Getter;
 import lombok.Setter;
 import org.opensearch.action.search.SearchRequest;
+<<<<<<< HEAD
 import org.opensearch.cluster.service.ClusterService;
+=======
+import org.opensearch.neuralsearch.sparse.common.SparseFieldUtils;
+>>>>>>> 6f499f5b (Fix two phase and seismic)
 import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.QueryBuilder;
 import org.opensearch.ingest.ConfigurationUtils;
@@ -218,12 +222,21 @@ public class NeuralSparseTwoPhaseProcessor extends AbstractProcessor implements 
         return twoPhaseRescorer;
     }
 
+<<<<<<< HEAD
     private void validateSeismicQuery(String[] indices, Multimap<AbstractNeuralQueryBuilder<?>, Float> queryBuilderMap) {
         for (String index : indices) {
             Set<String> sparseAnnFields = SparseFieldUtils.getSparseAnnFields(index, getClusterService());
             for (Map.Entry<AbstractNeuralQueryBuilder<?>, Float> entry : queryBuilderMap.entries()) {
                 AbstractNeuralQueryBuilder<?> queryBuilder = entry.getKey();
                 String fieldName = queryBuilder.fieldName();
+=======
+    private void validateSeismicQuery(String[] indices, Multimap<NeuralSparseQueryBuilder, Float> queryBuilderMap) {
+        for (String index : indices) {
+            Set<String> sparseAnnFields = SparseFieldUtils.getSparseAnnFields(index);
+            for (Map.Entry<NeuralSparseQueryBuilder, Float> entry : queryBuilderMap.entries()) {
+                NeuralSparseQueryBuilder neuralSparseQueryBuilder = entry.getKey();
+                String fieldName = neuralSparseQueryBuilder.fieldName();
+>>>>>>> 6f499f5b (Fix two phase and seismic)
                 if (sparseAnnFields.contains(fieldName)) {
                     throw new IllegalArgumentException(
                         String.format(Locale.ROOT, "Two phase search processor is not compatible with [%s] field for now", SEISMIC)
@@ -238,6 +251,7 @@ public class NeuralSparseTwoPhaseProcessor extends AbstractProcessor implements 
      *
      */
     public static class Factory implements Processor.Factory<SearchRequestProcessor> {
+
         @Override
         public NeuralSparseTwoPhaseProcessor create(
             Map<String, Processor.Factory<SearchRequestProcessor>> processorFactories,

@@ -4,6 +4,7 @@
  */
 package org.opensearch.neuralsearch.sparse.common;
 
+<<<<<<< HEAD
 import org.opensearch.cluster.ClusterState;
 import org.opensearch.cluster.metadata.IndexMetadata;
 import org.opensearch.cluster.metadata.MappingMetadata;
@@ -19,11 +20,26 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+=======
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import org.opensearch.cluster.metadata.IndexMetadata;
+import org.opensearch.cluster.metadata.MappingMetadata;
+import org.opensearch.neuralsearch.sparse.SparseSettings;
+import org.opensearch.neuralsearch.sparse.mapper.SparseTokensFieldType;
+import org.opensearch.neuralsearch.util.NeuralSearchClusterUtil;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+>>>>>>> 6f499f5b (Fix two phase and seismic)
 import java.util.Set;
 
 /**
  * Utility class for operations related to sparse fields in neural search indices.
  */
+<<<<<<< HEAD
 public class SparseFieldUtils {
     /**
      * Retrieves all sparse ANN fields from a given index, including nested fields.
@@ -58,6 +74,23 @@ public class SparseFieldUtils {
             .map(ClusterState::metadata)
             .map(metadataState -> metadataState.index(index))
             .orElse(null);
+=======
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public class SparseFieldUtils {
+
+    /**
+     * Retrieves all sparse ANN fields from a given index.
+     *
+     * @param index The name of the index
+     * @return A set of field names that are configured as sparse token fields, or an empty set if none exist
+     */
+    @SuppressWarnings("unchecked")
+    public static Set<String> getSparseAnnFields(String index) {
+        if (index == null) {
+            return Collections.emptySet();
+        }
+        final IndexMetadata metadata = NeuralSearchClusterUtil.instance().getClusterService().state().metadata().index(index);
+>>>>>>> 6f499f5b (Fix two phase and seismic)
         if (metadata == null || !SparseSettings.IS_SPARSE_INDEX_SETTING.get(metadata.getSettings())) {
             return Collections.emptySet();
         }
@@ -71,6 +104,7 @@ public class SparseFieldUtils {
         }
         Set<String> sparseAnnFields = new HashSet<>();
         Map<String, Object> fields = (Map<String, Object>) properties;
+<<<<<<< HEAD
         collectSparseAnnFields(fields, "", sparseAnnFields, 1, maxDepth);
         return sparseAnnFields;
     }
@@ -134,5 +168,15 @@ public class SparseFieldUtils {
                 }
             }
         }
+=======
+        for (Map.Entry<String, Object> field : fields.entrySet()) {
+            Map<String, Object> fieldMap = (Map<String, Object>) field.getValue();
+            Object type = fieldMap.get("type");
+            if (Objects.nonNull(type) && SparseTokensFieldType.isSparseTokensType(type.toString())) {
+                sparseAnnFields.add(field.getKey());
+            }
+        }
+        return sparseAnnFields;
+>>>>>>> 6f499f5b (Fix two phase and seismic)
     }
 }

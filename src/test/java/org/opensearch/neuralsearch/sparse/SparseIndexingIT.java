@@ -22,7 +22,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+<<<<<<< HEAD
 import static org.opensearch.neuralsearch.util.TestUtils.DELTA_FOR_SCORE_ASSERTION;
+=======
+import static org.opensearch.neuralsearch.sparse.common.SparseConstants.SEISMIC;
+>>>>>>> 6f499f5b (Fix two phase and seismic)
 import static org.opensearch.neuralsearch.util.TestUtils.createRandomTokenWeightMap;
 
 /**
@@ -392,8 +396,57 @@ public class SparseIndexingIT extends SparseBaseIT {
         Map<String, Object> source = (Map<String, Object>) document.get("_source");
         assertNotNull(source);
 
+<<<<<<< HEAD
         assertEquals("", source.get("title"));
 
         assertFalse("Sparse encoding field should not exist for empty string", source.containsKey(sparseFieldName));
+=======
+    public void testSearchDocumentsWithTwoPhaseSearchProcessorThenThrowException() throws Exception {
+        createSparseIndex(TEST_INDEX_NAME, TEST_SPARSE_FIELD_NAME, 4, 0.4f, 0.5f, 8);
+
+        ingestDocumentsAndForceMerge(
+            TEST_INDEX_NAME,
+            TEST_TEXT_FIELD_NAME,
+            TEST_SPARSE_FIELD_NAME,
+            List.of(
+                Map.of("1000", 0.1f, "2000", 0.1f),
+                Map.of("1000", 0.2f, "2000", 0.2f),
+                Map.of("1000", 0.3f, "2000", 0.3f),
+                Map.of("1000", 0.4f, "2000", 0.4f),
+                Map.of("1000", 0.5f, "2000", 0.5f),
+                Map.of("1000", 0.6f, "2000", 0.6f),
+                Map.of("1000", 0.7f, "2000", 0.7f),
+                Map.of("1000", 0.8f, "2000", 0.8f)
+            )
+        );
+
+        String twoPhaseSearchPipeline = "two-phase-search-pipeline";
+        createNeuralSparseTwoPhaseSearchProcessor(twoPhaseSearchPipeline);
+        updateIndexSettings(TEST_INDEX_NAME, Settings.builder().put("index.search.default_pipeline", twoPhaseSearchPipeline));
+
+        NeuralSparseQueryBuilder neuralSparseQueryBuilder = getNeuralSparseQueryBuilder(
+            TEST_SPARSE_FIELD_NAME,
+            2,
+            1.0f,
+            10,
+            Map.of("1000", 0.1f, "2000", 0.2f)
+        );
+
+        Exception exception = assertThrows(Exception.class, () -> search(TEST_INDEX_NAME, neuralSparseQueryBuilder, 10));
+        assert (exception.getMessage()
+            .contains(String.format(Locale.ROOT, "Two phase search processor is not compatible with [%s] field for now", SEISMIC)));
+    }
+
+    private List<String> getDocIDs(Map<String, Object> searchResults) {
+        Map<String, Object> hits1map = (Map<String, Object>) searchResults.get("hits");
+        List<String> actualIds = new ArrayList<>();
+        List<Object> hits1List = (List<Object>) hits1map.get("hits");
+        for (Object hits1Object : hits1List) {
+            Map<String, Object> mapObject = (Map<String, Object>) hits1Object;
+            String id = mapObject.get("_id").toString();
+            actualIds.add(id);
+        }
+        return actualIds;
+>>>>>>> 6f499f5b (Fix two phase and seismic)
     }
 }
