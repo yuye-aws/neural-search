@@ -104,14 +104,13 @@ public class ForwardIndexCacheItem extends AccountableTracker implements SparseV
             // Record access to update LRU status
             LruDocumentCache.DocumentKey documentKey = new LruDocumentCache.DocumentKey(cacheKey, docId);
             LruDocumentCache.getInstance().updateAccess(documentKey);
-
+            */
             // Only update memory usage if we actually inserted a new document
             if (sparseVectors.compareAndSet(docId, null, vector)) {
                 recordUsedBytes(ramBytesUsed);
             } else {
                 globalRamBytes.recordWithoutValidation(-ramBytesUsed, CircuitBreakerManager::addWithoutBreaking);
             }
-            */
         }
 
         /**
