@@ -54,11 +54,13 @@ public class ClusteredPostingCacheItem extends AccountableTracker implements Clu
         @Override
         public PostingClusters read(BytesRef term) {
             PostingClusters clusters = clusteredPostings.get(term);
+            /*
             if (clusters != null) {
                 // Record access to update LRU status
                 LruTermCache.TermKey termKey = new LruTermCache.TermKey(cacheKey, term.clone());
                 LruTermCache.getInstance().updateAccess(termKey);
             }
+            */
             return clusters;
         }
 
