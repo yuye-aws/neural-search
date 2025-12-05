@@ -21,6 +21,7 @@ import org.opensearch.neuralsearch.sparse.accessor.SparseVectorReader;
 import org.opensearch.neuralsearch.sparse.codec.SparsePostingsEnum;
 import org.opensearch.neuralsearch.sparse.common.DocWeightIterator;
 import org.opensearch.neuralsearch.sparse.common.IteratorWrapper;
+import org.opensearch.neuralsearch.sparse.common.Profiling;
 import org.opensearch.neuralsearch.sparse.data.DocumentCluster;
 import org.opensearch.neuralsearch.sparse.data.SparseVector;
 
@@ -102,20 +103,37 @@ public abstract class SeismicBaseScorer extends Scorer {
             DocIdSetIterator iterator = scorer.iterator();
             int docId = 0;
             while ((docId = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                long acceptedStart = Profiling.INSTANCE.begin(Profiling.ItemId.ACCEPTED);
                 if (acceptedDocs != null && !acceptedDocs.get(docId)) {
+                    Profiling.INSTANCE.end(Profiling.ItemId.ACCEPTED, acceptedStart);
                     continue;
                 }
+                Profiling.INSTANCE.end(Profiling.ItemId.ACCEPTED, acceptedStart);
+
+                long visitedStart = Profiling.INSTANCE.begin(Profiling.ItemId.VISITED);
                 if (visitedDocId.get(docId)) {
+                    Profiling.INSTANCE.end(Profiling.ItemId.VISITED, visitedStart);
                     continue;
                 }
                 visitedDocId.set(docId);
+                Profiling.INSTANCE.end(Profiling.ItemId.VISITED, visitedStart);
+
+                long readStart = Profiling.INSTANCE.begin(Profiling.ItemId.READ);
                 SparseVector doc = reader.read(docId);
+                Profiling.INSTANCE.end(Profiling.ItemId.READ, readStart);
+
                 if (doc == null) {
                     continue;
                 }
+
+                long dpStart = Profiling.INSTANCE.begin(Profiling.ItemId.DP);
                 int score = doc.dotProduct(queryDenseVector);
+                Profiling.INSTANCE.end(Profiling.ItemId.DP, dpStart);
+
+                long heapStart = Profiling.INSTANCE.begin(Profiling.ItemId.HEAP);
                 scoreHeap.add(Pair.of(docId, score));
                 resultHeap.add(Pair.of(docId, score));
+                Profiling.INSTANCE.end(Profiling.ItemId.HEAP, heapStart);
             }
         }
         return resultHeap.toOrderedList();
@@ -203,15 +221,27 @@ public abstract class SeismicBaseScorer extends Scorer {
                     if (clusterIter == null) {
                         return null;
                     }
+                    long clusterStart = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTER);
                     DocumentCluster cluster = clusterIter.next();
+                    Profiling.INSTANCE.end(Profiling.ItemId.CLUSTER, clusterStart);
+
                     while (cluster != null) {
+                        long shouldNotSkipStart = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTERSHOULDNOTSKIP);
                         if (cluster.isShouldNotSkip()) {
+                            Profiling.INSTANCE.end(Profiling.ItemId.CLUSTERSHOULDNOTSKIP, shouldNotSkipStart);
                             return cluster;
                         }
+                        Profiling.INSTANCE.end(Profiling.ItemId.CLUSTERSHOULDNOTSKIP, shouldNotSkipStart);
+
+                        long clusterDpStart = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTERDP);
                         int score = cluster.getSummary().dotProduct(queryDenseVector);
+                        Profiling.INSTANCE.end(Profiling.ItemId.CLUSTERDP, clusterDpStart);
+
                         if (scoreHeap.isFull()
                             && score < Objects.requireNonNull(scoreHeap.peek()).getRight() / sparseQueryContext.getHeapFactor()) {
+                            clusterStart = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTER);
                             cluster = clusterIter.next();
+                            Profiling.INSTANCE.end(Profiling.ItemId.CLUSTER, clusterStart);
                         } else {
                             return cluster;
                         }
@@ -229,22 +259,27 @@ public abstract class SeismicBaseScorer extends Scorer {
 
                 @Override
                 public int nextDoc() throws IOException {
+                    long nextDocStart = Profiling.INSTANCE.begin(Profiling.ItemId.NEXTDOC);
                     DocumentCluster cluster = null;
                     if (docs == null) {
                         cluster = nextQualifiedCluster();
                     } else {
                         int docId = docs.nextDoc();
                         if (docId != DocIdSetIterator.NO_MORE_DOCS) {
+                            Profiling.INSTANCE.end(Profiling.ItemId.NEXTDOC, nextDocStart);
                             return docId;
                         }
                         cluster = nextQualifiedCluster();
                     }
                     if (cluster == null) {
+                        Profiling.INSTANCE.end(Profiling.ItemId.NEXTDOC, nextDocStart);
                         return DocIdSetIterator.NO_MORE_DOCS;
                     }
                     docs = cluster.getDisi();
                     // every cluster should have at least one doc
-                    return docs.nextDoc();
+                    int result = docs.nextDoc();
+                    Profiling.INSTANCE.end(Profiling.ItemId.NEXTDOC, nextDocStart);
+                    return result;
                 }
 
                 @Override
