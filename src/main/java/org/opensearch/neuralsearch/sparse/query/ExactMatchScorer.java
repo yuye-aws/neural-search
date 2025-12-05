@@ -10,6 +10,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BitSetIterator;
 import org.opensearch.neuralsearch.sparse.accessor.SparseVectorReader;
+import org.opensearch.neuralsearch.sparse.common.Profiling;
 import org.opensearch.neuralsearch.sparse.data.SparseVector;
 
 import java.io.IOException;
@@ -56,10 +57,19 @@ public class ExactMatchScorer extends Scorer {
     @Override
     public float score() throws IOException {
         int docId = docID();
+
+        long readStart = Profiling.INSTANCE.begin(Profiling.ItemId.READ);
         SparseVector docVector = reader.read(docId);
+        Profiling.INSTANCE.end(Profiling.ItemId.READ, readStart);
+
         if (docVector == null) {
             return 0;
         }
-        return simScorer.score(docVector.dotProduct(queryDenseVector), 0);
+
+        long dpStart = Profiling.INSTANCE.begin(Profiling.ItemId.DP);
+        int dotProduct = docVector.dotProduct(queryDenseVector);
+        Profiling.INSTANCE.end(Profiling.ItemId.DP, dpStart);
+
+        return simScorer.score(dotProduct, 0);
     }
 }

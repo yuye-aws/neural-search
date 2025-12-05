@@ -112,4 +112,15 @@ public final class NeuralSearchSettings {
         Setting.Property.NodeScope,
         Setting.Property.Dynamic
     );
+
+    /**
+     * Enables or disables profiling for sparse ANN queries.
+     * When enabled, profiling data is collected. When disabled, profiling results are output to logs.
+     */
+    public static final Setting<Boolean> SPARSE_PROFILING_ENABLED = Setting.boolSetting(
+        "plugins.neural_search.sparse.profiling_enabled",
+        false,
+        Setting.Property.NodeScope,
+        Setting.Property.Dynamic
+    );
 }
