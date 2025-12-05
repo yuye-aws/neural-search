@@ -102,7 +102,6 @@ public class Profiling {
             } else {
                 log.info("count: 0");
             }
-
         }
     }
 }
