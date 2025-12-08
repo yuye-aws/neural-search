@@ -58,9 +58,9 @@ public class ExactMatchScorer extends Scorer {
     public float score() throws IOException {
         int docId = docID();
 
-        long readStart = Profiling.INSTANCE.begin(Profiling.ItemId.READ);
+        long readStart = Profiling.INSTANCE.begin(Profiling.ItemId.DOCREAD);
         SparseVector docVector = reader.read(docId);
-        Profiling.INSTANCE.end(Profiling.ItemId.READ, readStart);
+        Profiling.INSTANCE.end(Profiling.ItemId.DOCREAD, readStart);
 
         if (docVector == null) {
             return 0;

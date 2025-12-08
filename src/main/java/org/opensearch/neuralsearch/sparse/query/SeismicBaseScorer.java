@@ -118,9 +118,9 @@ public abstract class SeismicBaseScorer extends Scorer {
                 visitedDocId.set(docId);
                 Profiling.INSTANCE.end(Profiling.ItemId.VISITED, visitedStart);
 
-                long readStart = Profiling.INSTANCE.begin(Profiling.ItemId.READ);
+                long readStart = Profiling.INSTANCE.begin(Profiling.ItemId.DOCREAD);
                 SparseVector doc = reader.read(docId);
-                Profiling.INSTANCE.end(Profiling.ItemId.READ, readStart);
+                Profiling.INSTANCE.end(Profiling.ItemId.DOCREAD, readStart);
 
                 if (doc == null) {
                     continue;

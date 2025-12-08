@@ -15,6 +15,7 @@ import org.opensearch.neuralsearch.sparse.cache.CacheGatedPostingsReader;
 import org.opensearch.neuralsearch.sparse.cache.CacheKey;
 import org.opensearch.neuralsearch.sparse.cache.ClusteredPostingCache;
 import org.opensearch.neuralsearch.sparse.cache.ClusteredPostingCacheItem;
+import org.opensearch.neuralsearch.sparse.common.Profiling;
 import org.opensearch.neuralsearch.sparse.data.PostingClusters;
 
 import java.io.IOException;
@@ -99,7 +100,11 @@ public class SparseTerms extends Terms {
 
         @Override
         public SeekStatus seekCeil(BytesRef text) throws IOException {
-            if (reader.read(text) == null) {
+            long readStart = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTERREAD);
+            PostingClusters result = reader.read(text);
+            Profiling.INSTANCE.end(Profiling.ItemId.CLUSTERREAD, readStart);
+
+            if (result == null) {
                 return SeekStatus.NOT_FOUND;
             }
             currentTerm = text.clone();
@@ -136,7 +141,10 @@ public class SparseTerms extends Terms {
             if (currentTerm == null) {
                 return null;
             }
+            long readStart = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTERREAD);
             PostingClusters clusters = reader.read(currentTerm);
+            Profiling.INSTANCE.end(Profiling.ItemId.CLUSTERREAD, readStart);
+
             if (clusters != null) {
                 return new SparsePostingsEnum(clusters, cacheKey);
             }

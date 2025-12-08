@@ -60,14 +60,15 @@ public class Profiling {
 
     public enum ItemId {
         DP(0),
-        READ(1),
+        DOCREAD(1),
         VISITED(2),
         NEXTDOC(3),
         ACCEPTED(4),
         HEAP(5),
         CLUSTER(6),
         CLUSTERSHOULDNOTSKIP(7),
-        CLUSTERDP(8);
+        CLUSTERDP(8),
+        CLUSTERREAD(9);
 
         @Getter
         private int id;
