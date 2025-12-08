@@ -6,10 +6,11 @@ package org.opensearch.neuralsearch.sparse.cache;
 
 import lombok.NonNull;
 import org.apache.lucene.util.BytesRef;
-import org.opensearch.neuralsearch.sparse.data.PostingClusters;
-import org.opensearch.neuralsearch.sparse.codec.SparseTermsLuceneReader;
 import org.opensearch.neuralsearch.sparse.accessor.ClusteredPostingReader;
 import org.opensearch.neuralsearch.sparse.accessor.ClusteredPostingWriter;
+import org.opensearch.neuralsearch.sparse.codec.SparseTermsLuceneReader;
+import org.opensearch.neuralsearch.sparse.common.Profiling;
+import org.opensearch.neuralsearch.sparse.data.PostingClusters;
 
 import java.io.IOException;
 import java.util.Set;
@@ -60,7 +61,10 @@ public class CacheGatedPostingsReader implements ClusteredPostingReader {
      */
     @Override
     public PostingClusters read(BytesRef term) throws IOException {
+        long readStart = Profiling.INSTANCE.begin(Profiling.ItemId.CLUSTERREAD);
         PostingClusters clusters = cacheReader.read(term);
+        Profiling.INSTANCE.end(Profiling.ItemId.CLUSTERREAD, readStart);
+
         if (clusters != null) {
             return clusters;
         }

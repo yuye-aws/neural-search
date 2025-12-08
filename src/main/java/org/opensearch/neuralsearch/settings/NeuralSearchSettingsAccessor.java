@@ -11,6 +11,7 @@ import org.opensearch.common.util.concurrent.OpenSearchExecutors;
 import org.opensearch.neuralsearch.sparse.algorithm.ClusterTrainingExecutor;
 import org.opensearch.neuralsearch.sparse.cache.CircuitBreakerManager;
 import org.opensearch.neuralsearch.sparse.cache.MemoryUsageManager;
+import org.opensearch.neuralsearch.sparse.common.Profiling;
 import org.opensearch.neuralsearch.stats.events.EventStatsManager;
 
 import static org.opensearch.neuralsearch.settings.NeuralSearchSettings.NEURAL_CIRCUIT_BREAKER_LIMIT;
@@ -54,5 +55,12 @@ public class NeuralSearchSettingsAccessor {
                 int maxThreadQty = OpenSearchExecutors.allocatedProcessors(settings);
                 ClusterTrainingExecutor.updateThreadPoolSize(maxThreadQty, setting);
             });
+        clusterService.getClusterSettings().addSettingsUpdateConsumer(NeuralSearchSettings.SPARSE_PROFILING_ENABLED, (enabled) -> {
+            if (enabled) {
+                Profiling.INSTANCE.run();
+            } else {
+                Profiling.INSTANCE.output();
+            }
+        });
     }
 }
