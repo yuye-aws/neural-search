@@ -33,8 +33,7 @@ public class Profiling {
 
     private void clear() {
         for (ItemId itemId : ItemId.values()) {
-            ItemData itemData = new ItemData();
-            itemData.clear();
+            profilings.get(itemId.getId()).clear();
         }
     }
 
