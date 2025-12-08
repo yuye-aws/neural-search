@@ -58,11 +58,13 @@ public class ForwardIndexCacheItem extends AccountableTracker implements SparseV
                 return null;
             }
             SparseVector vector = sparseVectors.get(docId);
+            /*
             if (vector != null) {
                 // Record access to update LRU status
                 LruDocumentCache.DocumentKey documentKey = new LruDocumentCache.DocumentKey(cacheKey, docId);
                 LruDocumentCache.getInstance().updateAccess(documentKey);
             }
+            */
             return vector;
         }
     }
@@ -98,10 +100,11 @@ public class ForwardIndexCacheItem extends AccountableTracker implements SparseV
                 }
             }
 
+            /*
             // Record access to update LRU status
             LruDocumentCache.DocumentKey documentKey = new LruDocumentCache.DocumentKey(cacheKey, docId);
             LruDocumentCache.getInstance().updateAccess(documentKey);
-
+            */
             // Only update memory usage if we actually inserted a new document
             if (sparseVectors.compareAndSet(docId, null, vector)) {
                 recordUsedBytes(ramBytesUsed);
