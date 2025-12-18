@@ -36,6 +36,7 @@ public abstract class AbstractLruCache<Key extends LruCacheKey> {
     protected AbstractLruCache() {
         this.accessRecencyMap = Caffeine.newBuilder()
             .maximumSize(Long.MAX_VALUE)  // No size limit, just for LRU tracking
+            .executor(Runnable::run)  // Use synchronous executor to avoid ForkJoinPool threads
             .build();
         this.evictionLock = new ReentrantLock();
     }
@@ -61,7 +62,10 @@ public abstract class AbstractLruCache<Key extends LruCacheKey> {
      * @return The least recently used key, or null if the cache is empty
      */
     protected Key getLeastRecentlyUsedItem() {
-        return accessRecencyMap.asMap().keySet().stream().findFirst().orElse(null);
+        // Use policy() to get access to the eviction policy which maintains proper LRU order
+        return accessRecencyMap.policy().eviction()
+            .map(eviction -> eviction.coldest(1).keySet().stream().findFirst().orElse(null))
+            .orElse(null);
     }
 
     /**
@@ -138,6 +142,20 @@ public abstract class AbstractLruCache<Key extends LruCacheKey> {
     public void onIndexRemoval(@NonNull CacheKey cacheKey) {
         // Caffeine supports concurrent removal operations
         accessRecencyMap.asMap().keySet().removeIf(key -> key.getCacheKey().equals(cacheKey));
+    }
+
+    /**
+     * Cleans up the cache and releases resources.
+     * This method should be called when the cache is no longer needed to prevent thread leaks.
+     */
+    public void cleanup() {
+        evictionLock.lock();
+        try {
+            accessRecencyMap.invalidateAll();
+            accessRecencyMap.cleanUp();
+        } finally {
+            evictionLock.unlock();
+        }
     }
 
     /**
