@@ -7,10 +7,9 @@ package org.opensearch.neuralsearch.sparse.cache;
 import lombok.extern.log4j.Log4j2;
 import lombok.NonNull;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Abstract LRU cache implementation for sparse vector caches.
@@ -23,18 +22,27 @@ import java.util.Map;
 public abstract class AbstractLruCache<Key extends LruCacheKey> {
 
     /**
-     * Map to track access with LRU ordering
-     * We use Map instead of set because only linked hash map supports tracking the access order of items
+     * Cache to track access with LRU ordering using Caffeine
+     * This provides high-performance, thread-safe LRU access order tracking
      */
-    protected final Map<Key, Boolean> accessRecencyMap;
+    protected final Cache<Key, Boolean> accessRecencyMap;
+
+    /**
+     * Lock for ensuring thread safety during eviction operations only
+     * This is only needed for the eviction process to ensure consistency
+     */
+    private final ReentrantLock evictionLock;
 
     protected AbstractLruCache() {
-        this.accessRecencyMap = Collections.synchronizedMap(new LinkedHashMap<>(16, 0.75f, true));
+        this.accessRecencyMap = Caffeine.newBuilder()
+            .maximumSize(Long.MAX_VALUE)  // No size limit, just for LRU tracking
+            .build();
+        this.evictionLock = new ReentrantLock();
     }
 
     /**
      * Updates access to an item for a specific cache key.
-     * This updates the item's position in the LRU order.
+     * This updates the item's position in the LRU order using Caffeine's thread-safe operations.
      *
      * @param key The key being accessed
      */
@@ -43,7 +51,8 @@ public abstract class AbstractLruCache<Key extends LruCacheKey> {
             return;
         }
 
-        accessRecencyMap.put(key, true);
+        // Caffeine automatically maintains access order when we put/get items
+        accessRecencyMap.put(key, Boolean.TRUE);
     }
 
     /**
@@ -52,12 +61,7 @@ public abstract class AbstractLruCache<Key extends LruCacheKey> {
      * @return The least recently used key, or null if the cache is empty
      */
     protected Key getLeastRecentlyUsedItem() {
-        // With accessOrder is true in the LinkedHashMap, the first entry is the least recently used
-        Iterator<Map.Entry<Key, Boolean>> iterator = accessRecencyMap.entrySet().iterator();
-        if (iterator.hasNext()) {
-            return iterator.next().getKey();
-        }
-        return null;
+        return accessRecencyMap.asMap().keySet().stream().findFirst().orElse(null);
     }
 
     /**
@@ -72,8 +76,9 @@ public abstract class AbstractLruCache<Key extends LruCacheKey> {
 
         long ramBytesReleased = 0;
 
-        // Synchronizing the access recency map for thread safety
-        synchronized (accessRecencyMap) {
+        // Obtain the eviction lock for thread safety during the eviction process
+        evictionLock.lock();
+        try {
             // Continue evicting until we've freed enough memory or the cache is empty
             while (ramBytesReleased < ramBytesToRelease) {
                 // Get the least recently used item
@@ -85,8 +90,10 @@ public abstract class AbstractLruCache<Key extends LruCacheKey> {
                 }
 
                 // Evict the item and track bytes freed
-                ramBytesReleased += evictItem(leastRecentlyUsedKey);
+                ramBytesReleased += evictItemUnsafe(leastRecentlyUsedKey);
             }
+        } finally {
+            evictionLock.unlock();
         }
 
         log.debug("Freed {} bytes of memory", ramBytesReleased);
@@ -99,7 +106,24 @@ public abstract class AbstractLruCache<Key extends LruCacheKey> {
      * @return number of bytes freed, or 0 if the item was not evicted
      */
     protected long evictItem(Key key) {
-        if (accessRecencyMap.remove(key) == null) {
+        Boolean removed = accessRecencyMap.asMap().remove(key);
+        if (removed == null) {
+            return 0;
+        }
+
+        return doEviction(key);
+    }
+
+    /**
+     * Evicts a specific item from the cache without acquiring the lock.
+     * This method should only be called when the evictionLock is already held.
+     *
+     * @param key The key to evict
+     * @return number of bytes freed, or 0 if the item was not evicted
+     */
+    private long evictItemUnsafe(Key key) {
+        Boolean removed = accessRecencyMap.asMap().remove(key);
+        if (removed == null) {
             return 0;
         }
 
@@ -112,7 +136,8 @@ public abstract class AbstractLruCache<Key extends LruCacheKey> {
      * @param cacheKey The cache key to remove
      */
     public void onIndexRemoval(@NonNull CacheKey cacheKey) {
-        accessRecencyMap.keySet().removeIf(key -> key.getCacheKey().equals(cacheKey));
+        // Caffeine supports concurrent removal operations
+        accessRecencyMap.asMap().keySet().removeIf(key -> key.getCacheKey().equals(cacheKey));
     }
 
     /**
