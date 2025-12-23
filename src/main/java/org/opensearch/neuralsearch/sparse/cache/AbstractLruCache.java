@@ -96,7 +96,7 @@ public abstract class AbstractLruCache<Key extends LruCacheKey> {
                 }
 
                 // Evict the item and track bytes freed
-                ramBytesReleased += evictItemUnsafe(leastRecentlyUsedKey);
+                ramBytesReleased += evictItem(leastRecentlyUsedKey);
             }
         } finally {
             evictionLock.unlock();
@@ -112,22 +112,6 @@ public abstract class AbstractLruCache<Key extends LruCacheKey> {
      * @return number of bytes freed, or 0 if the item was not evicted
      */
     protected long evictItem(Key key) {
-        Boolean removed = accessRecencyMap.asMap().remove(key);
-        if (removed == null) {
-            return 0;
-        }
-
-        return doEviction(key);
-    }
-
-    /**
-     * Evicts a specific item from the cache without acquiring the lock.
-     * This method should only be called when the evictionLock is already held.
-     *
-     * @param key The key to evict
-     * @return number of bytes freed, or 0 if the item was not evicted
-     */
-    private long evictItemUnsafe(Key key) {
         Boolean removed = accessRecencyMap.asMap().remove(key);
         if (removed == null) {
             return 0;
