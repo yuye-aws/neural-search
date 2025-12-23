@@ -53,6 +53,7 @@ public abstract class AbstractLruCache<Key extends LruCacheKey> {
         }
 
         // Caffeine automatically maintains access order when we put/get items
+        accessRecencyMap.invalidate(key);
         accessRecencyMap.put(key, Boolean.TRUE);
     }
 
