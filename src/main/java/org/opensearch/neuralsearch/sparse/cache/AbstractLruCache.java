@@ -63,7 +63,8 @@ public abstract class AbstractLruCache<Key extends LruCacheKey> {
      */
     protected Key getLeastRecentlyUsedItem() {
         // Use policy() to get access to the eviction policy which maintains proper LRU order
-        return accessRecencyMap.policy().eviction()
+        return accessRecencyMap.policy()
+            .eviction()
             .map(eviction -> eviction.coldest(1).keySet().stream().findFirst().orElse(null))
             .orElse(null);
     }
