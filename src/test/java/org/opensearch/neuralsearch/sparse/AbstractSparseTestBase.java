@@ -6,11 +6,14 @@ package org.opensearch.neuralsearch.sparse;
 
 import lombok.SneakyThrows;
 import org.apache.lucene.index.SegmentInfo;
+import org.junit.After;
 import org.junit.Before;
 import org.mockito.internal.util.MockUtil;
 import org.opensearch.neuralsearch.query.OpenSearchQueryTestCase;
 import org.opensearch.neuralsearch.sparse.accessor.SparseVectorReader;
 import org.opensearch.neuralsearch.sparse.cache.CacheKey;
+import org.opensearch.neuralsearch.sparse.cache.LruDocumentCache;
+import org.opensearch.neuralsearch.sparse.cache.LruTermCache;
 import org.opensearch.neuralsearch.sparse.common.DocWeightIterator;
 import org.opensearch.neuralsearch.sparse.data.DocWeight;
 import org.opensearch.neuralsearch.sparse.data.DocumentCluster;
@@ -62,6 +65,20 @@ public class AbstractSparseTestBase extends OpenSearchQueryTestCase {
         RamBytesRecorder ramBytesRecorder = MemoryUsageManager.getInstance().getMemoryUsageTracker();
         mockedMemoryUsageTracker = MockUtil.isMock(ramBytesRecorder) ? ramBytesRecorder : spy(ramBytesRecorder);
         MemoryUsageManager.getInstance().setMemoryUsageTracker(mockedMemoryUsageTracker);
+    }
+
+    /**
+     * Clean up all singleton caches to prevent thread leaks from Caffeine background threads.
+     * This method should be called in tearDown() of test classes that use caches.
+     */
+    @After
+    @Override
+    public void tearDown() throws Exception {
+        // Clean up singleton LRU caches to prevent thread leaks
+        LruDocumentCache.getInstance().cleanup();
+        LruTermCache.getInstance().cleanup();
+
+        super.tearDown();
     }
 
     protected DocWeightIterator constructDocWeightIterator(Integer... docs) {

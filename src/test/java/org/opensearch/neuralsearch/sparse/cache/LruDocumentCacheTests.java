@@ -6,6 +6,7 @@ package org.opensearch.neuralsearch.sparse.cache;
 
 import lombok.SneakyThrows;
 import org.apache.lucene.index.SegmentInfo;
+import org.junit.After;
 import org.junit.Before;
 import org.opensearch.neuralsearch.sparse.AbstractSparseTestBase;
 import org.opensearch.neuralsearch.sparse.TestsPrepareUtils;
@@ -32,6 +33,17 @@ public class LruDocumentCacheTests extends AbstractSparseTestBase {
 
         testCache = new TestLruDocumentCache();
         testCache.clearAll();
+    }
+
+    /**
+     * Clear the LRU Document Cache and Forward Index Cache to avoid impact on other tests
+     */
+    @After
+    @Override
+    public void tearDown() throws Exception {
+        testCache.clearAll();
+        ForwardIndexCache.getInstance().onIndexRemoval(cacheKey1);
+        super.tearDown();
     }
 
     /**
@@ -211,16 +223,6 @@ public class LruDocumentCacheTests extends AbstractSparseTestBase {
         assertEquals(42, key.getDocId());
     }
 
-    /**
-     * Clear the LRU Document Cache and Forward Index Cache to avoid impact on other tests
-     */
-    @Override
-    public void tearDown() throws Exception {
-        testCache.clearAll();
-        ForwardIndexCache.getInstance().onIndexRemoval(cacheKey1);
-        super.tearDown();
-    }
-
     private static class TestLruDocumentCache extends LruDocumentCache {
 
         public TestLruDocumentCache() {
@@ -229,6 +231,7 @@ public class LruDocumentCacheTests extends AbstractSparseTestBase {
 
         public void clearAll() {
             super.evict(Long.MAX_VALUE);
+            super.cleanup();
         }
     }
 }
