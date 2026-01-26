@@ -30,7 +30,7 @@ public class SparseAnnNestedIT extends AbstractRestartUpgradeRestTestCase {
         waitForClusterHealthGreen(NODES_BWC_CLUSTER);
         String indexName = getIndexNameForTest();
         int shards = 3;
-        int replicas = 0;
+        int replicas = 1;
         List<String> routingIds = SparseTestCommon.generateUniqueRoutingIds(shards);
 
         if (isRunningAgainstOldCluster()) {
@@ -42,7 +42,7 @@ public class SparseAnnNestedIT extends AbstractRestartUpgradeRestTestCase {
                 4,
                 0.4f,
                 0.5f,
-                3,
+                1,
                 shards,
                 replicas
             );
@@ -112,7 +112,7 @@ public class SparseAnnNestedIT extends AbstractRestartUpgradeRestTestCase {
         String indexName = getIndexNameForTest();
         String modelId = null;
         int shards = 3;
-        int replicas = 0;
+        int replicas = 1;
         List<String> routingIds = SparseTestCommon.generateUniqueRoutingIds(shards);
 
         if (isRunningAgainstOldCluster()) {
@@ -131,7 +131,7 @@ public class SparseAnnNestedIT extends AbstractRestartUpgradeRestTestCase {
                 4,
                 0.4f,
                 0.5f,
-                3,
+                1,
                 shards,
                 replicas
             );
