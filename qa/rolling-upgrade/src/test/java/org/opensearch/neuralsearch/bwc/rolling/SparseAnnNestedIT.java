@@ -43,7 +43,7 @@ public class SparseAnnNestedIT extends AbstractRollingUpgradeTestCase {
                     5,
                     0.4f,
                     0.5f,
-                    3,
+                    1,
                     shards,
                     replicas
                 );
@@ -90,6 +90,17 @@ public class SparseAnnNestedIT extends AbstractRollingUpgradeTestCase {
                         );
                         bulkIngest(payload, null, routingIds.get(i));
                     }
+                    SparseTestCommon.forceMerge(client(), indexName);
+                    SparseTestCommon.waitForSegmentMerge(client(), indexName, shards, replicas);
+                } else {
+                    validateSparseANNNestedSearch(
+                        indexName,
+                        NESTED_FIELD_NAME,
+                        SPARSE_FIELD_NAME,
+                        Map.of("1000", 1.5f, "2000", 0.5f),
+                        12,
+                        Set.of("10", "11", "12")
+                    );
                 }
                 break;
             case UPGRADED:
@@ -152,7 +163,7 @@ public class SparseAnnNestedIT extends AbstractRollingUpgradeTestCase {
                     4,
                     0.4f,
                     0.5f,
-                    3,
+                    1,
                     shards,
                     replicas
                 );
