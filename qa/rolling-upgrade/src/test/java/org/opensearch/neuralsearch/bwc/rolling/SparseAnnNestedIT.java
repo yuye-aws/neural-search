@@ -30,7 +30,7 @@ public class SparseAnnNestedIT extends AbstractRollingUpgradeTestCase {
         waitForClusterHealthGreen(NODES_BWC_CLUSTER, 90);
         String indexName = getIndexNameForTest();
         int shards = 3;
-        int replicas = 0;
+        int replicas = 1;
         List<String> routingIds = SparseTestCommon.generateUniqueRoutingIds(shards);
 
         switch (getClusterType()) {
@@ -143,7 +143,7 @@ public class SparseAnnNestedIT extends AbstractRollingUpgradeTestCase {
         String indexName = getIndexNameForTest();
         String modelId = null;
         int shards = 3;
-        int replicas = 0;
+        int replicas = 1;
         List<String> routingIds = SparseTestCommon.generateUniqueRoutingIds(shards);
 
         switch (getClusterType()) {
